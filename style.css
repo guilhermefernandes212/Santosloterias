@@ -1,0 +1,935 @@
+
+    :root {
+      --verde: #1D9E75;
+      --verde-dark: #0F6E56;
+      --azul: #378ADD;
+      --azul-dark: #185FA5;
+      --vinho: #B12B72;
+      --vinho-dark: #7C1F54;
+      --bg: #F4F2EB;
+      --bg2: #ECEAE2;
+      --card: #FFFFFF;
+      --text: #2C2C2A;
+      --text2: #5F5E5A;
+      --border: rgba(44, 44, 42, 0.12);
+      --border2: rgba(44, 44, 42, 0.22);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .page-wide {
+      max-width: 860px;
+    }
+
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .login-card {
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .login-card input:focus {
+      border-color: var(--verde);
+    }
+
+    header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 14px;
+      color: var(--text2);
+      margin-top: 6px;
+    }
+
+    .modo-links {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .modo-link {
+      flex: 1;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text2);
+      text-decoration: none;
+      text-align: center;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .15s;
+    }
+
+    .modo-link:hover {
+      background: var(--bg2);
+      color: var(--text);
+    }
+
+    .modo-link.ativo {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+      color: #fff;
+    }
+
+    .modo-link.lotomania-ativo {
+      background: var(--vinho);
+      border-color: var(--vinho-dark);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .sec-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 12px;
+    }
+
+    .sec-label-mix {
+      margin-top: 16px;
+    }
+
+    /* Grade de dezenas */
+    .grid-dez {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+
+    .dez {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border2);
+      background: var(--bg);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s ease;
+      user-select: none;
+    }
+
+    .dez:hover {
+      transform: scale(1.12);
+      border-color: var(--verde);
+      color: var(--verde);
+    }
+
+    .dez.fixa {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    .dez.mistura {
+      background: var(--azul);
+      border-color: var(--azul-dark);
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    .grid-lotomania {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .grid-lotomania .dez {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+    }
+
+    .dez.loto:hover {
+      border-color: var(--vinho);
+      color: var(--vinho);
+    }
+
+    .dez.loto.selecionada {
+      background: var(--vinho);
+      border-color: var(--vinho-dark);
+      color: #fff;
+      transform: scale(1.02);
+    }
+
+    /* Legenda */
+    .legenda {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .leg {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .leg-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .mini-copy {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: -6px;
+      line-height: 1.4;
+    }
+
+    .analise-status {
+      font-size: 12px;
+      color: var(--text2);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+
+    .odds-panel {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      background: #EEF7F3;
+      border: 1px solid rgba(29, 158, 117, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .odds-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .odds-row strong {
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    .mini-note {
+      max-width: 160px;
+      font-size: 11px;
+      color: var(--text2);
+      text-align: right;
+      line-height: 1.35;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mini-stats div {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      text-align: center;
+    }
+
+    .mini-stats strong {
+      display: block;
+      font-family: var(--mono);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .mini-stats span {
+      display: block;
+      margin-top: 2px;
+      font-size: 10px;
+      color: var(--text2);
+    }
+
+    .dica-section {
+      margin-top: 12px;
+    }
+
+    .dica-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .mini-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 7px;
+    }
+
+    .rank-dezenas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .rank-pill {
+      min-width: 54px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      padding: 5px 7px;
+      text-align: center;
+    }
+
+    .rank-pill strong {
+      display: block;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--azul-dark);
+    }
+
+    .rank-pill small {
+      display: block;
+      margin-top: 2px;
+      font-size: 9px;
+      color: var(--text2);
+      white-space: nowrap;
+    }
+
+    .rank-dezenas.compact .rank-pill {
+      min-width: 50px;
+      padding: 5px 6px;
+    }
+
+    .padroes-lista {
+      display: grid;
+      gap: 6px;
+    }
+
+    .padrao-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .padrao-row strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .padrao-row span {
+      color: var(--text2);
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .dicas-texto {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text2);
+      background: #E6F1FB;
+      border-left: 3px solid var(--azul);
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: .75rem;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat .n {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .stat .l {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+
+    /* Controles */
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .inp-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .inp-group label {
+      font-size: 12px;
+      color: var(--text2);
+      font-family: var(--mono);
+    }
+
+    select {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235F5E5A' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    select:focus {
+      border-color: var(--verde);
+    }
+
+    /* Aviso */
+    .aviso {
+      font-size: 13px;
+      color: #854F0B;
+      background: #FAEEDA;
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      display: none;
+      border-left: 3px solid #BA7517;
+    }
+
+    /* Botões */
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 6px;
+    }
+
+    .btn:hover {
+      background: var(--bg2);
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-primary {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--verde-dark);
+    }
+
+    .btn-lotomania {
+      background: var(--vinho);
+      border-color: var(--vinho-dark);
+    }
+
+    .btn-lotomania:hover {
+      background: var(--vinho-dark);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 5px 14px;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .btn-danger {
+      background: #FCEBEB;
+      border-color: #F09595;
+      color: #A32D2D;
+    }
+
+    .btn-danger:hover {
+      background: #F7C1C1;
+    }
+
+    /* Jogos */
+    .jogos-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .jogos-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .jogos-wrap::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .jogos-wrap::-webkit-scrollbar-track {
+      background: var(--bg);
+      border-radius: 2px;
+    }
+
+    .jogos-wrap::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px;
+    }
+
+    .jogo-card {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      transition: border-color .15s;
+    }
+
+    .jogo-card:hover {
+      border-color: var(--border2);
+    }
+
+    .jogo-n {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text2);
+      min-width: 48px;
+    }
+
+    .bolinhas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .b {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .b-f {
+      background: var(--verde);
+      color: #fff;
+    }
+
+    .b-l {
+      background: var(--azul);
+      color: #fff;
+    }
+
+    .b-lm {
+      background: var(--vinho);
+      color: #fff;
+    }
+
+    .lotomania-card {
+      align-items: flex-start;
+    }
+
+    .lotomania-bolas {
+      flex: 1;
+    }
+
+    .lotomania-bolas .b {
+      width: 24px;
+      height: 24px;
+      font-size: 9px;
+    }
+
+    .b-resultado {
+      background: linear-gradient(135deg, var(--verde) 0%, var(--verde-dark) 100%);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(29, 158, 117, 0.3);
+    }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #E6F1FB;
+      color: var(--azul-dark);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* Botões de ação */
+    .acoes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .loto-actions {
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 10px;
+    }
+
+    .prob-table {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .prob-table div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .prob-table strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .prob-table span {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text2);
+      white-space: nowrap;
+    }
+
+    /* Histórico */
+    .hist-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+
+    .hist-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .hist-data {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .hist-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #E1F5EE;
+      color: var(--verde-dark);
+    }
+
+    .hist-fixas {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+
+    .hist-jogos {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 9px;
+      background: var(--bg);
+      border: none;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .tab.ativo {
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.ativo {
+      display: block;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 2rem;
+      font-family: var(--mono);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.ativa {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-content h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .modal-content p {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      background: var(--bg);
+      border-color: var(--border2);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg2);
+    }
+
+    @media (max-width: 480px) {
+      .row2 {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .acoes {
+        grid-template-columns: 1fr;
+      }
+
+      .loto-actions,
+      .prob-table {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-lotomania {
+        gap: 4px;
+      }
+
+      .grid-lotomania .dez {
+        font-size: 10px;
+        border-radius: 6px;
+      }
+
+      .odds-panel,
+      .dica-grid {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .mini-note {
+        max-width: none;
+        text-align: left;
+      }
+
+      .dez {
+        width: 34px;
+        height: 34px;
+        font-size: 11px;
+      }
+
+      .b {
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+      }
+
+      .modal-buttons {
+        grid-template-columns: 1fr;
+      }
+    }

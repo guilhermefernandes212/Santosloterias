@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotofácil — Gerador de Desenvolvimento</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+  <div class="page">
+
+    <header>
+      <h1>Lotofácil</h1>
+      <p>Gerador de desenvolvimento — selecione as fixas e configure o jogo</p>
+    </header>
+
+    <div class="modo-links">
+      <a class="modo-link ativo" href="lotofacil.html">Lotofacil</a>
+      <a class="modo-link" href="lotofacil.html">Lotomania</a>
+    </div>
+
+    <div class="tabs">
+      <button class="tab ativo" onclick="setTab('gerar', this)">Gerar jogos</button>
+      <button class="tab" onclick="setTab('historico', this)">Histórico</button>
+    </div>
+
+    <!-- ABA GERAR -->
+    <div class="tab-content ativo" id="tab-gerar">
+
+      <div class="card">
+        <div class="sec-label">Dezenas fixas — clique para selecionar</div>
+        <div class="grid-dez" id="gridDez"></div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="n" id="sFixas">0</div>
+            <div class="l">Fixas</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="sLivres">0</div>
+            <div class="l">Livres</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="sComb">—</div>
+            <div class="l">Combinações</div>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="inp-group">
+            <label>Dezenas por jogo</label>
+            <select id="selDezJogo">
+              <option value="15">15 dezenas</option>
+              <option value="16">16 dezenas</option>
+              <option value="17">17 dezenas</option>
+              <option value="18">18 dezenas</option>
+              <option value="19" selected>19 dezenas</option>
+              <option value="20">20 dezenas</option>
+            </select>
+          </div>
+          <div class="inp-group">
+            <label>Quantidade de jogos</label>
+            <select id="selJogos">
+              <option value="5">5 jogos</option>
+              <option value="10">10 jogos</option>
+              <option value="15" selected>15 jogos</option>
+              <option value="20">20 jogos</option>
+              <option value="30">30 jogos</option>
+              <option value="50">50 jogos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="aviso" id="aviso"></div>
+        <button class="btn btn-primary" id="btnGerar">Gerar jogos</button>
+      </div>
+
+      <div class="card dicas-card">
+        <div class="jogos-header">
+          <div>
+            <div class="sec-label">Painel de dica online</div>
+            <p class="mini-copy">Dados historicos puxados da internet, com filtros para 13 e 14 pontos.</p>
+          </div>
+          <button class="btn btn-sm" id="btnAnalise" onclick="carregarAnalise()">Atualizar</button>
+        </div>
+
+        <div class="analise-status" id="analiseStatus">Carregando resultados online...</div>
+
+        <div class="odds-panel">
+          <div>
+            <div class="mini-label" id="oddsTitulo">Chance oficial</div>
+            <div class="odds-row">
+              <span>13 pontos: <strong id="odds13">-</strong></span>
+              <span>14 pontos: <strong id="odds14">-</strong></span>
+            </div>
+          </div>
+          <div class="mini-note">Fonte: API e tabela de probabilidade da CAIXA.</div>
+        </div>
+
+        <div class="mini-stats">
+          <div>
+            <strong id="dConcursos">-</strong>
+            <span>concursos</span>
+          </div>
+          <div>
+            <strong id="dUltimo">-</strong>
+            <span>ultimo</span>
+          </div>
+          <div>
+            <strong id="dRecorte">-</strong>
+            <span>recorte recente</span>
+          </div>
+        </div>
+
+        <div class="dica-section">
+          <div class="mini-label">Melhores dezenas combinadas</div>
+          <div class="rank-dezenas" id="melhoresDezenas"></div>
+        </div>
+
+        <div class="dica-grid">
+          <div>
+            <div class="mini-label">Quentes recentes</div>
+            <div class="rank-dezenas compact" id="quentesRecentes"></div>
+          </div>
+          <div>
+            <div class="mini-label">Mais atrasadas</div>
+            <div class="rank-dezenas compact" id="atrasadasDezenas"></div>
+          </div>
+        </div>
+
+        <div class="dica-section">
+          <div class="mini-label">Padroes que mais aparecem</div>
+          <div class="padroes-lista" id="listaPadroes"></div>
+        </div>
+
+        <div class="dica-section">
+          <div class="mini-label">Dicas para filtrar 13/14</div>
+          <div class="dicas-texto" id="dicasTexto"></div>
+        </div>
+
+        <button class="btn" id="btnAplicarDicas" onclick="aplicarDicas()" disabled>Aplicar dica nas fixas e mistura</button>
+      </div>
+
+      <div class="card" id="secJogos" style="display:none">
+        <div class="jogos-header">
+          <div class="sec-label" id="lblJogos">Jogos gerados</div>
+          <button class="btn btn-sm btn-danger" onclick="limparJogos()">Limpar</button>
+        </div>
+        <div class="jogos-wrap" id="jogosWrap"></div>
+        <div class="acoes">
+          <button class="btn" id="btnCopiar" onclick="copiarJogos()">Copiar jogos</button>
+          <button class="btn" id="btnSalvar" onclick="salvarHistorico()">Salvar no histórico</button>
+        </div>
+      </div>
+
+    </div>
+
+
+
+    <div class="tab-content" id="tab-historico">
+      <div class="card">
+        <div class="jogos-header">
+          <div class="sec-label">Histórico de jogos</div>
+          <button class="btn btn-sm btn-danger" onclick="limparHistorico()">Limpar tudo</button>
+        </div>
+        <div id="histConteudo"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL DE PERGUNTA DOWNLOAD -->
+  <div id="modalDownload" class="modal">
+    <div class="modal-content">
+      <h3>Deseja baixar os jogos?</h3>
+      <p>Os jogos serão salvos em um arquivo .txt</p>
+      <div class="modal-buttons">
+        <button class="btn btn-primary" onclick="confirmarDownload()">Sim, baixar</button>
+        <button class="btn btn-secondary" onclick="fecharModal()">Não, obrigado</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>lotofacil gerador © 2026</footer>
+<script src="script.js"></script>
+  
+</body>
+
+</html>
