@@ -1,0 +1,49 @@
+/* Mega-Sena overrides */
+
+.grid-mega {
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.grid-mega .dez {
+  font-size: 10px;
+}
+
+/* Cores da Mega-Sena: verde escuro */
+.dez.fixa {
+  background: #1a6b2f !important;
+  border-color: #145524 !important;
+  color: #fff !important;
+}
+
+/* Dezenas: pares azul, ímpares laranja (herdado do style.css) */
+
+/* Bolinhas da Mega nos jogos */
+.b-mega-f {
+  background: #1a6b2f;
+  color: #fff;
+  border-color: #145524;
+  font-weight: 700;
+}
+
+.b-mega-l {
+  background: #e8f5eb;
+  color: #1a6b2f;
+  border-color: #7dc492;
+}
+
+/* Badge de acertos Mega */
+.acerto-4 { background: #FFF4E6; color: #8C5A0F; }
+.acerto-5 { background: #E8F1FB; color: #1A4D7C; }
+.acerto-6 { background: #1a6b2f; color: #fff; }
+
+/* Resultado sorteado em verde Mega */
+.dez-sorteada {
+  background: #1a6b2f !important;
+  color: #fff !important;
+  border-color: #145524 !important;
+}
+
+.dez-hit {
+  background: #1a6b2f !important;
+  border-color: #145524 !important;
+}
