@@ -96,7 +96,9 @@ function mostrarAviso(texto) {
 }
 
 function renderDezena(el, tipo) {
-  el.className = 'dez' + (tipo ? ' ' + tipo : '');
+  const n = parseInt(el.dataset.n);
+  const paridade = n % 2 === 0 ? 'par' : 'impar';
+  el.className = 'dez ' + (tipo ? tipo : paridade);
 }
 
 function sincronizarGrades() {
@@ -110,7 +112,8 @@ function sincronizarGrades() {
 const grid = document.getElementById('gridDez');
 for (let i = 1; i <= 25; i++) {
   const b = document.createElement('div');
-  b.className = 'dez';
+  const paridade = i % 2 === 0 ? 'par' : 'impar';
+  b.className = 'dez ' + paridade;
   b.textContent = fmt(i);
   b.dataset.n = i;
   b.addEventListener('click', () => {
@@ -182,12 +185,32 @@ document.getElementById('btnGerar').addEventListener('click', () => {
   mostrarModal();
 });
 
+function renderCartao(marcados, fixas, acertos) {
+  // marcados = Set de dezenas marcadas no jogo
+  // fixas = Set de fixas (cor diferente)
+  // acertos = Set de dezenas sorteadas (para conferência, opcional)
+  let html = '<div class="cartao-grid">';
+  for (let n = 1; n <= 25; n++) {
+    const marcado = marcados.has(n);
+    const fixa = fixas && fixas.has(n);
+    const acertou = acertos && acertos.has(n) && marcado;
+    const sorteada = acertos && acertos.has(n) && !marcado;
+    let cls = 'cartao-cel';
+    if (acertou) cls += ' cartao-acerto';
+    else if (fixa && marcado) cls += ' cartao-fixa';
+    else if (marcado) cls += ' cartao-marcado';
+    else if (sorteada) cls += ' cartao-sorteada-miss';
+    html += `<div class="${cls}">${fmt(n)}</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
 function renderJogos(jogos, fixas) {
   const fs = new Set(fixas);
   const wrap = document.getElementById('jogosWrap');
   wrap.innerHTML = '';
   jogos.forEach((jogo, i) => {
-    const misturados = jogo.filter(d => !fs.has(d));
     const card = document.createElement('div');
     card.className = 'jogo-card';
     card.innerHTML = `
@@ -195,7 +218,6 @@ function renderJogos(jogos, fixas) {
       <div class="bolinhas">
         ${jogo.map(d => `<span class="b ${fs.has(d) ? 'b-f' : 'b-l'}">${fmt(d)}</span>`).join('')}
       </div>
-      <span class="tag">${misturados.map(fmt).join(' . ')}</span>
     `;
     wrap.appendChild(card);
   });
@@ -256,22 +278,121 @@ function limparHistorico() {
   }
 }
 
-function renderHistorico() {
+let ultimoResultado = null;
+
+function setStatusConcurso(msg, cor) {
+  const el = document.getElementById('concursoStatus');
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg || '';
+  el.style.color = cor || 'var(--text2)';
+}
+
+async function buscarConcurso(numero) {
+  const base = numero
+    ? `${CAIXA_LOTOFACIL_API}/${numero}`
+    : CAIXA_LOTOFACIL_API;
+  const urls = CORS_PROXY_BUILDERS.map(b => b(base));
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const data = await r.json();
+      const norm = normalizarConcursoApi(data);
+      if (norm.dezenas.length === 15) {
+        return { numero: norm.numero, data: norm.data, dezenas: new Set(norm.dezenas), lista: norm.dezenas };
+      }
+    } catch { /* tenta próximo */ }
+  }
+  return null;
+}
+
+async function buscarUltimo() {
+  setStatusConcurso('Buscando último concurso...', 'var(--text2)');
+  const res = await buscarConcurso(null);
+  if (res) {
+    ultimoResultado = res;
+    document.getElementById('inputConcurso').value = res.numero;
+    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--verde)');
+    renderHistorico();
+  } else {
+    setStatusConcurso('Não foi possível buscar o resultado. Tente novamente.', '#c0392b');
+  }
+}
+
+async function buscarConcursoManual() {
+  const input = document.getElementById('inputConcurso');
+  const num = parseInt(input.value);
+  if (!num || num < 1) {
+    setStatusConcurso('Digite um número de concurso válido.', '#c0392b');
+    return;
+  }
+  setStatusConcurso(`Buscando concurso ${num}...`, 'var(--text2)');
+  const res = await buscarConcurso(num);
+  if (res) {
+    ultimoResultado = res;
+    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--verde)');
+    renderHistorico();
+  } else {
+    setStatusConcurso(`Concurso ${num} não encontrado.`, '#c0392b');
+  }
+}
+
+async function buscarUltimoResultado() {
+  const res = await buscarConcurso(null);
+  if (res) { ultimoResultado = res; return true; }
+  return false;
+}
+
+function renderJogoComAcertos(jogo, idx, resultado) {
+  const acertos = jogo.filter(n => resultado.dezenas.has(n));
+  const pts = acertos.length;
+  let badgeClass = 'acerto-badge';
+  if (pts >= 15) badgeClass += ' acerto-15';
+  else if (pts >= 14) badgeClass += ' acerto-14';
+  else if (pts >= 13) badgeClass += ' acerto-13';
+  else badgeClass += ' acerto-ok';
+
+  const dezenas = jogo.map(n => {
+    const hit = resultado.dezenas.has(n);
+    return `<span class="dez-inline${hit ? ' dez-hit' : ''}">${fmt(n)}</span>`;
+  }).join('');
+
+  return `
+    <div class="hist-jogo-row">
+      <span class="hist-jogo-num">Jogo ${idx + 1}</span>
+      <div class="hist-dez-wrap">${dezenas}</div>
+      <span class="${badgeClass}">${pts} pts</span>
+    </div>`;
+}
+
+function renderHistorico(resultado) {
   const h = getHistorico();
   const el = document.getElementById('histConteudo');
   if (!h.length) {
     el.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:1rem 0">Nenhum jogo salvo ainda.</p>';
     return;
   }
-  el.innerHTML = h.map((entrada) => `
+
+  const res = resultado || ultimoResultado;
+  const resultadoHTML = res
+    ? `<div class="hist-resultado">
+        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + res.data : ''}</span>
+        <div class="hist-resultado-dez">${res.lista.map(n => `<span class="dez-inline dez-sorteada">${fmt(n)}</span>`).join('')}</div>
+       </div>`
+    : '';
+
+  el.innerHTML = resultadoHTML + h.map((entrada) => `
     <div class="hist-item">
       <div class="hist-header">
         <span class="hist-data">${entrada.data}</span>
-        <span class="hist-badge">${entrada.jogos.length} jogos . ${entrada.dezenas_por_jogo} dez.</span>
+        <span class="hist-badge">${entrada.jogos.length} jogos · ${entrada.dezenas_por_jogo} dez.</span>
       </div>
-      <div class="hist-fixas">Fixas: ${entrada.fixas.map(fmt).join(' - ')}</div>
-      <div class="hist-jogos">
-        ${entrada.jogos.map((j, n) => `Jogo ${n + 1}: ${j.map(fmt).join(' - ')}`).join('<br>')}
+      <div class="hist-fixas">Fixas: ${entrada.fixas.map(fmt).join(' · ')}</div>
+      <div class="hist-jogos-lista">
+        ${res
+          ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res)).join('')
+          : entrada.jogos.map((j, i) => `<div class="hist-jogo-row"><span class="hist-jogo-num">Jogo ${i+1}</span><span style="font-family:var(--mono);font-size:11px">${j.map(fmt).join(' · ')}</span></div>`).join('')
+        }
       </div>
     </div>
   `).join('');
@@ -282,7 +403,24 @@ function setTab(id, el) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('ativo'));
   el.classList.add('ativo');
   document.getElementById('tab-' + id).classList.add('ativo');
-  if (id === 'historico') renderHistorico();
+  if (id === 'historico') carregarHistorico();
+}
+
+async function carregarHistorico() {
+  const h = getHistorico();
+  if (!h.length) { renderHistorico(); return; }
+
+  if (!ultimoResultado) {
+    setStatusConcurso('Buscando último resultado...', 'var(--text2)');
+    const ok = await buscarUltimoResultado();
+    if (ok) {
+      document.getElementById('inputConcurso').value = ultimoResultado.numero;
+      setStatusConcurso(`Concurso ${ultimoResultado.numero}${ultimoResultado.data ? ' — ' + ultimoResultado.data : ''} carregado.`, 'var(--verde)');
+    } else {
+      setStatusConcurso('Não foi possível buscar o resultado. Use o campo acima para buscar manualmente.', '#c0392b');
+    }
+  }
+  renderHistorico();
 }
 
 function fmtDenominador(n) {
