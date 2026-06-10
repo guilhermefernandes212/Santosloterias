@@ -179,6 +179,23 @@
       color: var(--verde);
     }
 
+    .dez.impar {
+      background: #FFF4E6;
+      border-color: #E8A24A;
+      color: #8C5A0F;
+    }
+
+    .dez.par {
+      background: #E8F1FB;
+      border-color: #7AAEDD;
+      color: #1A4D7C;
+    }
+
+    .dez.impar:hover, .dez.par:hover {
+      border-color: var(--verde);
+      color: var(--verde);
+    }
+
     .dez.fixa {
       background: var(--verde);
       border-color: var(--verde-dark);
@@ -932,4 +949,219 @@
       .modal-buttons {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* Conferência de resultados */
+    .hist-resultado {
+      background: #1a1a2e;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hist-resultado-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .hist-resultado-dez {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .dez-inline {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg2);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .dez-sorteada {
+      background: #f0c040;
+      color: #3a2800;
+      border-color: #c9980a;
+      font-weight: 600;
+    }
+
+    .dez-hit {
+      background: var(--verde);
+      color: #fff;
+      border-color: var(--verde-dark);
+      font-weight: 600;
+    }
+
+    .hist-jogos-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 6px;
+    }
+
+    .hist-jogo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hist-jogo-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text2);
+      min-width: 42px;
+    }
+
+    .hist-dez-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .acerto-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: var(--bg2);
+      color: var(--text2);
+      white-space: nowrap;
+    }
+
+    .acerto-13 { background: #FFF4E6; color: #8C5A0F; }
+    .acerto-14 { background: #E8F1FB; color: #1A4D7C; }
+    .acerto-15 { background: var(--verde); color: #fff; }
+    .acerto-ok { background: var(--bg2); color: var(--text2); }
+
+    /* Cartão 5x5 */
+    .cartao-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      width: 100%;
+    }
+
+    .cartao-cel {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg2);
+      color: var(--border2);
+      border: 1.5px solid var(--border);
+      transition: all .1s;
+    }
+
+    .cartao-marcado {
+      background: #E8F1FB;
+      color: #1A4D7C;
+      border-color: #7AAEDD;
+      font-weight: 600;
+    }
+
+    .cartao-fixa {
+      background: var(--verde);
+      color: #fff;
+      border-color: var(--verde-dark);
+      font-weight: 700;
+    }
+
+    .cartao-acerto {
+      background: var(--verde);
+      color: #fff;
+      border-color: var(--verde-dark);
+      font-weight: 700;
+      box-shadow: 0 0 0 2px rgba(29,158,117,0.3);
+    }
+
+    .cartao-sorteada-miss {
+      background: #FFF4E6;
+      color: #8C5A0F;
+      border-color: #E8A24A;
+    }
+
+    .jogo-card-cartao {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+
+    .jogo-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hist-jogo-cartao {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hist-jogo-cartao-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hist-jogos-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    /* Busca de concurso */
+    .concurso-busca {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .concurso-busca input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      min-width: 0;
+    }
+
+    .concurso-busca input:focus {
+      border-color: var(--verde);
+    }
+
+    .concurso-busca input::-webkit-inner-spin-button,
+    .concurso-busca input::-webkit-outer-spin-button {
+      opacity: 1;
     }
