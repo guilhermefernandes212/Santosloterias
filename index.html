@@ -22,7 +22,7 @@
 
     <div class="modo-links">
       <a class="modo-link ativo" href="index.html">Lotofacil</a>
-      <a class="modo-link" href="index.html">Lotomania</a>
+      <a class="modo-link" href="megasena.html">Mega-Sena</a>
     </div>
 
     <div class="tabs">
@@ -164,6 +164,17 @@
 
 
     <div class="tab-content" id="tab-historico">
+      <div class="card">
+        <div class="jogos-header">
+          <div class="sec-label">Conferência de concurso</div>
+        </div>
+        <div class="concurso-busca">
+          <input type="number" id="inputConcurso" placeholder="Nº do concurso (ex: 3200)" min="1" />
+          <button class="btn btn-sm" onclick="buscarConcursoManual()">Buscar</button>
+          <button class="btn btn-sm" onclick="buscarUltimo()">Último</button>
+        </div>
+        <div id="concursoStatus" class="analise-status" style="display:none"></div>
+      </div>
       <div class="card">
         <div class="jogos-header">
           <div class="sec-label">Histórico de jogos</div>
