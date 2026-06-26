@@ -2,6 +2,10 @@
     :root {
       --verde: #1D9E75;
       --verde-dark: #0F6E56;
+      --roxo: #8B5CF6;
+      --roxo-dark: #6D28D9;
+      --orange: #F59E0B;
+      --orange-dark: #D97706;
       --azul: #378ADD;
       --azul-dark: #185FA5;
       --vinho: #B12B72;
@@ -120,9 +124,22 @@
       color: #fff;
     }
 
+    .modo-link.lotofacil-ativo {
+      background: var(--roxo);
+      border-color: var(--roxo-dark);
+      color: #fff;
+    }
+
+    .modo-link.megasena-ativo {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+      color: #fff;
+    }
+
     .modo-link.lotomania-ativo {
-      background: var(--vinho);
-      border-color: var(--vinho-dark);
+      background: var(--orange);
+      border-color: var(--orange-dark);
+      color: #fff;
     }
 
     .card {
@@ -153,6 +170,32 @@
       flex-wrap: wrap;
       gap: 7px;
       margin-bottom: 14px;
+    }
+
+    .fixas-config {
+      display: flex;
+      justify-content: flex-end;
+      margin: -4px 0 12px;
+    }
+
+    .fixas-qtd {
+      width: 150px;
+    }
+
+    .fixas-qtd input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .fixas-qtd input:focus {
+      border-color: var(--verde);
     }
 
     .dez {
@@ -201,6 +244,22 @@
       border-color: var(--verde-dark);
       color: #fff;
       transform: scale(1.05);
+    }
+
+    body.lotofacil .dez.fixa {
+      background: var(--roxo);
+      border-color: var(--roxo-dark);
+      background-color: #0F6E56;
+    }
+
+    body.megasena .dez.fixa {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+    }
+
+    body.lotomania .dez.fixa {
+      background: var(--orange);
+      border-color: var(--orange-dark);
     }
 
     .dez.mistura {
@@ -530,6 +589,7 @@
       cursor: pointer;
       transition: all .15s;
       margin-top: 6px;
+   
     }
 
     .btn:hover {
@@ -550,13 +610,34 @@
       background: var(--verde-dark);
     }
 
+    .btn-lotofacil {
+      background: var(--roxo);
+      border-color: var(--roxo-dark);
+      color: #fff;
+    }
+
+    .btn-lotofacil:hover {
+      background: var(--roxo-dark);
+    }
+
+    .btn-megasena {
+      background: var(--verde);
+      border-color: var(--verde-dark);
+      color: #fff;
+    }
+
+    .btn-megasena:hover {
+      background: var(--verde-dark);
+    }
+
     .btn-lotomania {
-      background: var(--vinho);
-      border-color: var(--vinho-dark);
+      background: var(--orange);
+      border-color: var(--orange-dark);
+      color: #fff;
     }
 
     .btn-lotomania:hover {
-      background: var(--vinho-dark);
+      background: var(--orange-dark);
     }
 
     .btn:disabled {
@@ -1165,3 +1246,110 @@
     .concurso-busca input::-webkit-outer-spin-button {
       opacity: 1;
     }
+
+
+
+
+    
+        /* ---- Metodologia 29+63 ---- */
+        .metod-fixas-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 8px 0 12px;
+        }
+        .metod-grupos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .grupo-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            background: var(--bg);
+        }
+        .grupo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .grupo-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text2);
+        }
+        .grupo-dez {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+        /* variáveis — clicáveis, 4 cores cíclicas usando variáveis do sistema */
+        .b-var {
+            cursor: pointer;
+            transition: transform .12s, opacity .12s;
+        }
+        .b-var:hover {
+            transform: scale(1.12);
+            opacity: .85;
+        }
+        .b-grupo-0 { background: var(--azul);   color: #fff; }
+        .b-grupo-1 { background: var(--roxo);   color: #fff; }
+        .b-grupo-2 { background: var(--verde);  color: #fff; }
+        .b-grupo-3 { background: var(--vinho);  color: #fff; }
+        /* fixas na metodologia usam a cor lotomania (orange) */
+        body.lotomania #metodFixasWrap .b-f {
+            background: var(--orange);
+            color: #fff;
+        }
+        .metod-info {
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.5;
+            margin: 4px 0 8px;
+        }
+        #metodStatus {
+            font-size: 12px;
+            color: var(--text2);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 480px) {
+            .metod-grupos-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* === Otimizador de score === */
+        .otim-metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
+        .otim-metrica { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+        .otim-metrica.otim-ganho { background: #EEF7F3; border-color: rgba(29,158,117,0.3); }
+        .otim-val { display: block; font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); }
+        .otim-label { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
+        .otim-dist { display: grid; gap: 5px; margin-top: 8px; }
+        .otim-dist-row { display: flex; align-items: center; gap: 8px; }
+        .otim-dist-label { font-family: var(--mono); font-size: 11px; color: var(--text2); min-width: 38px; }
+        .otim-bar-wrap { flex: 1; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+        .otim-bar { height: 100%; border-radius: 3px; transition: width .4s; }
+        .fill-verde { background: var(--verde); }
+        .fill-orange { background: var(--orange); }
+        .fill-cinza { background: var(--text2); opacity: .45; }
+        .otim-dist-pct { font-family: var(--mono); font-size: 11px; color: var(--text2); min-width: 36px; text-align: right; }
+        #otimStatus { font-size: 12px; color: var(--text2); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; margin: 8px 0; }
+        /* === Painel fixas metodologia === */
+        .metod-fixas-panel { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin: 10px 0; }
+        .metod-fixas-opcoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .fixas-opcao { flex: 1; min-width: 120px; background: var(--card); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 10px; cursor: pointer; transition: all .15s; text-align: center; }
+        .fixas-opcao:hover { border-color: var(--orange); }
+        .fixas-opcao.selecionada { border-color: var(--orange); background: #FEF3DB; }
+        .fixas-opcao-titulo { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--text2); }
+        .fixas-opcao-dez { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; justify-content: center; }
+    

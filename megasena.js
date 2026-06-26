@@ -1,4 +1,3 @@
-const MAX_FIXAS = 12;
 const TOTAL_DEZ = 60;
 const DEZ_JOGO_PADRAO = 6;
 const CAIXA_MEGA_API = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena';
@@ -63,6 +62,13 @@ function selecionarDiversos(todos, n) {
 const fixasSel = new Set();
 let jogosGerados = [];
 let ultimoResultado = null;
+let ultimaAnaliseMega = null;
+
+function getQtdFixasDesejada() {
+  const el = document.getElementById('qtdFixas');
+  const valor = parseInt(el && el.value, 10);
+  return clamp(Number.isFinite(valor) ? valor : 12, 1, TOTAL_DEZ);
+}
 
 function getLivres() {
   const livres = [];
@@ -104,8 +110,9 @@ for (let i = 1; i <= TOTAL_DEZ; i++) {
     if (fixasSel.has(i)) {
       fixasSel.delete(i);
     } else {
-      if (fixasSel.size >= MAX_FIXAS) {
-        mostrarAviso(`Máximo de ${MAX_FIXAS} dezenas fixas atingido.`);
+      const limiteFixas = getQtdFixasDesejada();
+      if (fixasSel.size >= limiteFixas) {
+        mostrarAviso(`Máximo de ${limiteFixas} dezenas fixas atingido. Altere a quantidade de fixas para selecionar mais.`);
         return;
       }
       fixasSel.add(i);
@@ -119,6 +126,7 @@ for (let i = 1; i <= TOTAL_DEZ; i++) {
 // ── atualizar stats ───────────────────────────────────────────
 function atualizar() {
   const dezJogo = parseInt(document.getElementById('selDezJogo').value);
+  const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres();
   const livresPorJogo = dezJogo - fixasSel.size;
   const nComb = livresPorJogo >= 0 && livresPorJogo <= livresPool.length
@@ -135,6 +143,8 @@ function atualizar() {
   const aviso = document.getElementById('aviso');
   if (fixasSel.size === 0) {
     mostrarAviso('Selecione pelo menos 1 dezena fixa.');
+  } else if (fixasSel.size > qtdFixas) {
+    mostrarAviso(`Você selecionou ${fixasSel.size} fixas, mas a quantidade configurada é ${qtdFixas}. Remova algumas dezenas ou aumente a quantidade.`);
   } else if (livresPorJogo < 0) {
     mostrarAviso(`Fixas (${fixasSel.size}) maiores que dezenas por jogo (${dezJogo}). Aumente as dezenas por jogo.`);
   } else if (nComb === 0) {
@@ -146,16 +156,18 @@ function atualizar() {
 
 document.getElementById('selDezJogo').addEventListener('change', atualizar);
 document.getElementById('selJogos').addEventListener('change', atualizar);
+document.getElementById('qtdFixas').addEventListener('input', atualizar);
 
 // ── gerar jogos ───────────────────────────────────────────────
 document.getElementById('btnGerar').addEventListener('click', () => {
   const fixas = Array.from(fixasSel).sort((a, b) => a - b);
   const dezJogo = parseInt(document.getElementById('selDezJogo').value);
   const nJogos = parseInt(document.getElementById('selJogos').value);
+  const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres().sort((a, b) => a - b);
   const livresPorJogo = dezJogo - fixas.length;
 
-  if (fixas.length === 0 || fixas.length > MAX_FIXAS || livresPorJogo < 0) return;
+  if (fixas.length === 0 || fixas.length > qtdFixas || livresPorJogo < 0) return;
 
   const combTotal = comb(livresPool.length, livresPorJogo);
   if (combTotal === 0) return;
@@ -411,13 +423,11 @@ document.getElementById('modalDownload').addEventListener('click', e => {
 atualizar();
 
 // ── estatísticas históricas ───────────────────────────────────
-const CACHE_KEY_MEGA = 'mega_resultados_cache_v1';
+const CACHE_KEY_MEGA = 'mega_resultados_cache_v2';
 const MEGA_SEEDS = [
   { nome: 'loteria.json', url: 'https://cdn.jsdelivr.net/gh/guilhermeasn/loteria.json@master/data/megasena.json' },
   { nome: 'loteria.json (raw)', url: 'https://raw.githubusercontent.com/guilhermeasn/loteria.json/master/data/megasena.json' }
 ];
-
-let dicaAplicavel = null;
 
 function setStatusAnalise(texto) {
   const el = document.getElementById('analiseStatus');
@@ -433,6 +443,92 @@ function addDist(dist, chave) { dist[chave] = (dist[chave] || 0) + 1; }
 function topDist(dist, total) {
   const [label, count] = Object.entries(dist).sort((a, b) => b[1] - a[1])[0] || ['-', 0];
   return { label, count, pct: total ? count / total : 0 };
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function parsePrimeiroNumero(label, fallback) {
+  const m = String(label || '').match(/\d+/);
+  return m ? parseInt(m[0], 10) : fallback;
+}
+
+function parseFaixaSoma(label) {
+  const m = String(label || '').match(/(\d+)-(\d+)/);
+  return m ? { min: parseInt(m[1], 10), max: parseInt(m[2], 10) } : { min: 150, max: 230 };
+}
+
+function chanceMegaTexto(dezenasNoJogo) {
+  const totalComb = comb(TOTAL_DEZ, 6);
+  const cobertas = comb(dezenasNoJogo, 6);
+  const umaEm = Math.round(totalComb / cobertas);
+  return {
+    umaEm: `1 em ${umaEm.toLocaleString('pt-BR')}`,
+    pct: pctTexto(cobertas / totalComb)
+  };
+}
+
+function contarConsecutivas(dezenas) {
+  let pares = 0;
+  for (let i = 1; i < dezenas.length; i++) {
+    if (dezenas[i] === dezenas[i - 1] + 1) pares++;
+  }
+  return pares;
+}
+
+function faixaDezena(n) {
+  return Math.ceil(n / 10);
+}
+
+function scoreJogoMega(jogo, analise) {
+  const setAnterior = new Set(analise.ultimo.dezenas);
+  const paresDesejados = parsePrimeiroNumero(analise.padroes.pares.label, 3);
+  const baixasDesejadas = parsePrimeiroNumero(analise.padroes.faixas.label, 3);
+  const repetidasDesejadas = parsePrimeiroNumero(analise.padroes.repetidos.label, 1);
+  const consecutivasDesejadas = parsePrimeiroNumero(analise.padroes.consecutivas.label, 1);
+  const somaDesejada = parseFaixaSoma(analise.padroes.soma.label);
+
+  const pares = jogo.filter(n => n % 2 === 0).length;
+  const baixas = jogo.filter(n => n <= 30).length;
+  const repetidas = jogo.filter(n => setAnterior.has(n)).length;
+  const consecutivas = contarConsecutivas(jogo);
+  const soma = jogo.reduce((a, b) => a + b, 0);
+  const faixas = new Set(jogo.map(faixaDezena)).size;
+  const scoreBase = jogo.reduce((acc, n) => acc + analise.porNumero[n].score, 0);
+  const somaOk = soma >= somaDesejada.min && soma <= somaDesejada.max;
+
+  let score = scoreBase;
+  score -= Math.abs(pares - paresDesejados) * 16;
+  score -= Math.abs(baixas - baixasDesejadas) * 12;
+  score -= Math.abs(repetidas - repetidasDesejadas) * 10;
+  score -= Math.abs(consecutivas - consecutivasDesejadas) * 8;
+  score += somaOk ? 18 : -Math.min(28, Math.abs(soma - ((somaDesejada.min + somaDesejada.max) / 2)) / 3);
+  score += faixas >= 4 ? 8 : -10;
+  return { score, pares, baixas, repetidas, consecutivas, soma, faixas };
+}
+
+function gerarSugestaoMega(analise) {
+  const top = analise.melhores.slice(0, 24).map(d => d.n);
+  let melhor = null;
+
+  for (let i = 0; i < top.length; i++) {
+    for (let j = i + 1; j < top.length; j++) {
+      for (let k = j + 1; k < top.length; k++) {
+        for (let l = k + 1; l < top.length; l++) {
+          for (let m = l + 1; m < top.length; m++) {
+            for (let o = m + 1; o < top.length; o++) {
+              const jogo = [top[i], top[j], top[k], top[l], top[m], top[o]].sort((a, b) => a - b);
+              const aval = scoreJogoMega(jogo, analise);
+              if (!melhor || aval.score > melhor.avaliacao.score) melhor = { jogo, avaliacao: aval };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return melhor;
 }
 
 function normalizarMegaConcurso(valor, fallback) {
@@ -505,30 +601,39 @@ async function carregarHistoricoMega() {
     }
   }
 
-  // mescla com último e faltantes recentes
+  // mescla com último e completa todo o histórico desde o concurso 1
   const mapa = new Map();
   base.forEach(c => mapa.set(c.numero, c));
   mapa.set(ultimo.numero, ultimo);
 
-  // completa os últimos 50 que faltarem
   const faltantes = [];
-  for (let n = Math.max(1, ultimo.numero - 50); n <= ultimo.numero; n++) {
+  for (let n = 1; n <= ultimo.numero; n++) {
     if (!mapa.has(n)) faltantes.push(n);
   }
   if (faltantes.length) {
-    setStatusAnalise(`Baixando ${faltantes.length} concursos recentes...`);
-    await Promise.all(faltantes.map(async n => {
-      try {
-        const d = await fetchJsonMega(`${CAIXA_MEGA_API}/${n}`);
-        const c = normalizarMegaConcurso(d);
-        if (c.dezenas.length === 6) mapa.set(c.numero, c);
-      } catch { /* ignora */ }
-    }));
+    let baixados = 0;
+    const tamanhoLote = 10;
+    setStatusAnalise(`Baixando histórico completo: 0/${faltantes.length} concursos faltantes...`);
+    for (let i = 0; i < faltantes.length; i += tamanhoLote) {
+      const lote = faltantes.slice(i, i + tamanhoLote);
+      await Promise.all(lote.map(async n => {
+        try {
+          const d = await fetchJsonMega(`${CAIXA_MEGA_API}/${n}`);
+          const c = normalizarMegaConcurso(d, n);
+          if (c.dezenas.length === 6) mapa.set(c.numero, c);
+        } catch { /* ignora falhas pontuais */ }
+      }));
+      baixados += lote.length;
+      if (baixados % 50 === 0 || baixados >= faltantes.length) {
+        setStatusAnalise(`Baixando histórico completo: ${baixados}/${faltantes.length} concursos faltantes...`);
+      }
+    }
   }
 
   const concursos = Array.from(mapa.values()).sort((a, b) => a.numero - b.numero);
   salvarCacheMega(concursos);
-  return { concursos, fonte: 'API CAIXA' };
+  const completo = concursos.length >= ultimo.numero && concursos[0] && concursos[0].numero === 1;
+  return { concursos, fonte: completo ? 'API CAIXA desde o concurso 1' : 'API CAIXA com base parcial' };
 }
 
 function analisarMega(concursos) {
@@ -537,7 +642,7 @@ function analisarMega(concursos) {
   const freq = Array(61).fill(0);
   const freqRec = Array(61).fill(0);
   const ultimoIdx = Array(61).fill(0);
-  const distPares = {}, distSoma = {}, distFaixas = {}, distRepetidos = {};
+  const distPares = {}, distSoma = {}, distFaixas = {}, distRepetidos = {}, distConsecutivas = {}, distGrupos = {};
 
   concursos.forEach((c, idx) => {
     const setAtual = new Set(c.dezenas);
@@ -546,9 +651,13 @@ function analisarMega(concursos) {
     const impares = 6 - pares;
     const soma = c.dezenas.reduce((a, b) => a + b, 0);
     const faixaL = c.dezenas.filter(n => n <= 30).length;
+    const consecutivas = contarConsecutivas(c.dezenas);
+    const grupos = new Set(c.dezenas.map(faixaDezena)).size;
     addDist(distPares, `${pares} pares / ${impares} ímpares`);
     addDist(distSoma, `${Math.floor(soma / 20) * 20}-${Math.floor(soma / 20) * 20 + 19}`);
     addDist(distFaixas, `${faixaL} baixas (1-30) / ${6 - faixaL} altas`);
+    addDist(distConsecutivas, `${consecutivas} pares consecutivos`);
+    addDist(distGrupos, `${grupos} grupos de dezena`);
     if (idx > 0) {
       const ant = new Set(concursos[idx - 1].dezenas);
       let rep = 0; setAtual.forEach(n => { if (ant.has(n)) rep++; });
@@ -558,18 +667,26 @@ function analisarMega(concursos) {
 
   recorte.forEach(c => c.dezenas.forEach(n => freqRec[n]++));
 
-  const dezenas = Array.from({ length: 60 }, (_, i) => i + 1).map(n => ({
-    n,
-    freq: freq[n],
-    freqRecente: freqRec[n],
-    histPct: freq[n] / total,
-    recPct: freqRec[n] / recorte.length,
-    atraso: total - ultimoIdx[n],
-    score: (freq[n] / total) * 0.55 + (freqRec[n] / recorte.length) * 0.45
-  }));
+  const esperado = total * (6 / TOTAL_DEZ);
+  const desvio = Math.sqrt(total * (6 / TOTAL_DEZ) * (1 - (6 / TOTAL_DEZ)));
+  const ultimo = concursos[concursos.length - 1];
+  const dezenas = Array.from({ length: 60 }, (_, i) => i + 1).map(n => {
+    const histPct = freq[n] / total;
+    const recPct = freqRec[n] / recorte.length;
+    const atraso = total - ultimoIdx[n];
+    const z = desvio ? (freq[n] - esperado) / desvio : 0;
+    const atrasoScore = 1 - clamp(Math.abs(atraso - 9) / 35, 0, 1);
+    const score = (histPct * 520) + (recPct * 360) + (clamp(z, -2.5, 2.5) * 7) + (atrasoScore * 12);
+    return { n, freq: freq[n], freqRecente: freqRec[n], histPct, recPct, atraso, z, score };
+  });
+
+  const porNumero = {};
+  dezenas.forEach(d => { porNumero[d.n] = d; });
 
   return {
     total, recorte: recorte.length,
+    ultimo,
+    porNumero,
     melhores: [...dezenas].sort((a, b) => b.score - a.score),
     quentes: [...dezenas].sort((a, b) => b.freqRecente - a.freqRecente || b.freq - a.freq),
     atrasadas: [...dezenas].sort((a, b) => b.atraso - a.atraso),
@@ -578,6 +695,8 @@ function analisarMega(concursos) {
       repetidos: topDist(distRepetidos, Math.max(1, total - 1)),
       soma: topDist(distSoma, total),
       faixas: topDist(distFaixas, total),
+      consecutivas: topDist(distConsecutivas, total),
+      grupos: topDist(distGrupos, total),
     }
   };
 }
@@ -597,6 +716,8 @@ function renderPadroesMega(padroes) {
     ['Repetidas do anterior', padroes.repetidos],
     ['Soma por faixa', padroes.soma],
     ['Baixas / altas (1-30)', padroes.faixas],
+    ['Consecutivas', padroes.consecutivas],
+    ['Grupos de 10 dezenas', padroes.grupos],
   ];
   const el = document.getElementById('listaPadroes');
   if (!el) return;
@@ -606,6 +727,24 @@ function renderPadroesMega(padroes) {
       <span>${dado.label} — ${pctTexto(dado.pct)}</span>
     </div>
   `).join('');
+}
+
+function renderSugestaoMega(sugestao) {
+  const el = document.getElementById('sugestaoMatematica');
+  if (!el || !sugestao) return;
+  const a = sugestao.avaliacao;
+  el.innerHTML = `
+    <div class="sugestao-bolas">${sugestao.jogo.map(n => `<span class="b">${fmt(n)}</span>`).join('')}</div>
+    <div class="sugestao-meta">
+      <span>${a.pares} pares</span>
+      <span>${6 - a.pares} ímpares</span>
+      <span>soma ${a.soma}</span>
+      <span>${a.baixas} baixas</span>
+      <span>${a.repetidas} repetidas</span>
+      <span>${a.consecutivas} consecutivas</span>
+    </div>
+    <div>Calculado por frequência histórica, recência, atraso e aderência aos padrões mais comuns. O botão abaixo aplica automaticamente a quantidade de fixas digitada na caixa acima.</div>
+  `;
 }
 
 async function carregarAnalise() {
@@ -619,19 +758,22 @@ async function carregarAnalise() {
     if (concursos.length < 50) throw new Error('histórico insuficiente');
     const analise = analisarMega(concursos);
     const ultimo = concursos[concursos.length - 1];
-
-    dicaAplicavel = analise.melhores.slice(0, MAX_FIXAS).map(d => d.n).sort((a, b) => a - b);
+    ultimaAnaliseMega = analise;
 
     document.getElementById('dConcursos').textContent = analise.total.toLocaleString('pt-BR');
     document.getElementById('dUltimo').textContent = ultimo.numero.toLocaleString('pt-BR');
     document.getElementById('dRecorte').textContent = analise.recorte.toLocaleString('pt-BR');
+    const chance = chanceMegaTexto(6);
+    const chanceJogoAtual = chanceMegaTexto(parseInt(document.getElementById('selDezJogo').value, 10) || 6);
+    document.getElementById('dChanceSena').textContent = chance.umaEm;
+    document.getElementById('dProbSena').textContent = chanceJogoAtual.pct;
     setStatusAnalise(`Análise carregada (${fonte}): ${analise.total} concursos até o nº ${ultimo.numero}${ultimo.data ? ' — ' + ultimo.data : ''}.`);
 
     renderRankMega('melhoresDezenas', analise.melhores.slice(0, 15), 'score');
     renderRankMega('quentesRecentes', analise.quentes.slice(0, 10), 'quente');
     renderRankMega('atrasadasDezenas', analise.atrasadas.slice(0, 10), 'atraso');
     renderPadroesMega(analise.padroes);
-
+    renderSugestaoMega(gerarSugestaoMega(analise));
     if (btnAplicar) btnAplicar.disabled = false;
   } catch (e) {
     setStatusAnalise(`Não foi possível carregar os dados: ${e.message || e}`);
@@ -641,9 +783,20 @@ async function carregarAnalise() {
 }
 
 function aplicarDicas() {
-  if (!dicaAplicavel) return;
+  if (!ultimaAnaliseMega) {
+    setStatusAnalise('Atualize a análise antes de aplicar fixas automáticas.');
+    return;
+  }
+
+  const qtd = getQtdFixasDesejada();
+  const fixas = ultimaAnaliseMega.melhores
+    .slice(0, qtd)
+    .map(d => d.n)
+    .sort((a, b) => a - b);
+
   fixasSel.clear();
-  dicaAplicavel.forEach(n => fixasSel.add(n));
+  fixas.forEach(n => fixasSel.add(n));
   sincronizarGrades();
   atualizar();
+  setStatusAnalise(`${fixas.length} fixas automáticas aplicadas pela análise. Você ainda pode ajustar manualmente na grade.`);
 }

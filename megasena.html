@@ -7,8 +7,13 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="megasena.css">
+  
+  <!-- React, ReactDOM e Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="megasena">
   <div class="page">
 
     <header>
@@ -17,9 +22,10 @@
     </header>
 
     <div class="modo-links">
-      <a class="modo-link" href="index.html">Lotofácil</a>
-      <a class="modo-link ativo" href="megasena.html">Mega-Sena</a>
-    </div>
+            <a class="modo-link lotofacil-ativo" href="index.html">Lotofácil</a>
+            <a class="modo-link megasena-ativo" href="megasena.html">Mega-Sena</a>
+            <a class="modo-link lotomania-ativo" href="lotomania.html">Lotomania</a>
+        </div>
 
     <div class="tabs">
       <button class="tab ativo" onclick="setTab('gerar', this)">Gerar jogos</button>
@@ -30,7 +36,13 @@
     <div class="tab-content ativo" id="tab-gerar">
 
       <div class="card">
-        <div class="sec-label">Dezenas fixas — clique para selecionar (máx. 12)</div>
+        <div class="sec-label">Dezenas fixas — clique para selecionar</div>
+        <div class="fixas-config">
+          <div class="inp-group fixas-qtd">
+            <label for="qtdFixas">Quantidade de fixas</label>
+            <input type="number" id="qtdFixas" min="1" max="60" value="12" />
+          </div>
+        </div>
         <div class="grid-dez grid-mega" id="gridDez"></div>
 
         <div class="stats">
@@ -83,7 +95,7 @@
         </div>
 
         <div class="aviso" id="aviso"></div>
-        <button class="btn btn-primary" id="btnGerar">Gerar jogos</button>
+        <button class="btn btn-megasena" id="btnGerar">Gerar jogos</button>
       </div>
 
       <!-- PAINEL ESTATÍSTICAS -->
@@ -104,12 +116,15 @@
           <div><strong id="dRecorte">-</strong><span>recorte recente</span></div>
         </div>
 
-        <div class="dica-section">
-          <div class="mini-label">Dezenas com melhor desempenho histórico</div>
-          <div class="rank-dezenas" id="melhoresDezenas"></div>
-        </div>
-
-        <div class="dica-grid">
+        <div class="odds-panel odds-mega-panel">
+          <div>
+            <div class="mini-label">Probabilidade real</div>
+            <div class="odds-row">
+              <span>Sena com 6 dezenas: <strong id="dChanceSena">-</strong></span>
+              <span>Prob. por jogo: <strong id="dProbSena">-</strong></span>
+            </div>
+          </div>
+            <div class="mini-note">Estatística ajuda a filtrar padrões; não transforma sorteio aleatório em certeza.</div>
           <div>
             <div class="mini-label">Mais quentes (recentes)</div>
             <div class="rank-dezenas compact" id="quentesRecentes"></div>
@@ -125,7 +140,12 @@
           <div class="padroes-lista" id="listaPadroes"></div>
         </div>
 
-        <button class="btn" id="btnAplicarDicas" onclick="aplicarDicas()" disabled>Aplicar top 12 como fixas</button>
+        <div class="dica-section">
+          <div class="mini-label">Sugestão matemática</div>
+          <div class="sugestao-mega" id="sugestaoMatematica">Atualize a análise para calcular.</div>
+        </div>
+
+        <button class="btn" id="btnAplicarDicas" onclick="aplicarDicas()" disabled>Aplicar fixas automáticas</button>
       </div>
 
       <div class="card" id="secJogos" style="display:none">

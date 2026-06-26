@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Loterias — Bem-vindo</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --verde: #1D9E75;
+      --verde-dark: #0F6E56;
+      --roxo: #8B5CF6;
+      --orange: #F59E0B;
+      --orange-dark: #D97706;
+      --azul: #378ADD;
+      --azul-dark: #185FA5;
+      --bg: #F4F2EB;
+      --bg2: #ECEAE2;
+      --card: #FFFFFF;
+      --text: #2C2C2A;
+      --text2: #5F5E5A;
+      --border: rgba(44, 44, 42, 0.12);
+      --border2: rgba(44, 44, 42, 0.22);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    .cursor {
+      display: inline-block;
+      font-weight: 400;
+      color: var(--orange);
+      animation: piscar 0.7s step-end infinite;
+      margin-left: 1px;
+    }
+
+    @keyframes piscar {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 560px;
+      width: 100%;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .logo-bolas {
+      display: flex;
+      gap: 5px;
+    }
+
+    .logo-bola {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--text2);
+      margin-top: 6px;
+    }
+
+    /* Card principal */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Como funciona */
+    .sec-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 14px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .step-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-body strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .step-body span {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    /* Loterias disponíveis */
+    .loterias {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .loteria-chip {
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .loteria-chip .nome {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      display: block;
+    }
+
+    .loteria-chip .detalhe {
+      font-size: 10px;
+      color: var(--text2);
+      margin-top: 2px;
+      display: block;
+    }
+
+    .chip-lotofacil {
+      background: #F3EFFE;
+      border-color: #C4A8F8;
+    }
+
+    .chip-lotofacil .nome {
+      color: var(--roxo);
+    }
+
+    .chip-mega {
+      background: #EEF7F3;
+      border-color: #7DD3B8;
+    }
+
+    .chip-mega .nome {
+      color: var(--verde-dark);
+    }
+
+    .chip-lotomania {
+      background: #FEF3DC;
+      border-color: #F5C96A;
+    }
+
+    .chip-lotomania .nome {
+      color: var(--orange-dark);
+    }
+
+    /* Aviso */
+    .aviso-card {
+      background: #FFFBF0;
+      border: 1px solid #E8C96A;
+      border-left: 4px solid var(--orange);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 1rem;
+    }
+
+    .aviso-titulo {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--orange-dark);
+      margin-bottom: 8px;
+    }
+
+    .aviso-texto {
+      font-size: 12px;
+      color: #6B4E0A;
+      line-height: 1.6;
+    }
+
+    .aviso-texto p+p {
+      margin-top: 6px;
+    }
+
+    /* Checkbox */
+    .aceite {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+
+    .aceite:hover {
+      border-color: var(--verde);
+    }
+
+    .aceite input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+      accent-color: var(--verde);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .aceite-texto {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+      user-select: none;
+    }
+
+    .aceite-texto strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Botão entrar */
+    .btn-entrar {
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--verde);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-entrar:hover:not(:disabled) {
+      background: var(--verde-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(29, 158, 117, 0.3);
+    }
+
+    .btn-entrar:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .btn-entrar:disabled {
+      background: var(--bg2);
+      color: var(--text2);
+      border: 1px solid var(--border2);
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 1.5rem;
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 480px) {
+      .loterias {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="logo-row">
+        <div class="logo-bolas">
+          <div class="logo-bola" style="background:var(--roxo)"></div>
+          <div class="logo-bola" style="background:var(--verde)"></div>
+          <div class="logo-bola" style="background:var(--orange)"></div>
+        </div>
+        <h1>Gerador de Loterias</h1>
+      </div>
+      <p>Ferramenta estatística para geração e análise de jogos</p>
+    </div>
+
+    <!-- Como funciona -->
+    <div class="card">
+      <div class="sec-label">Como funciona</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon" style="background:#EEF7F3">🎯</div>
+          <div class="step-body">
+            <strong>Selecione as dezenas fixas</strong>
+            <span>Escolha os números que devem aparecer em todos os jogos gerados.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon" style="background:#F3EFFE">📊</div>
+          <div class="step-body">
+            <strong>Use a análise histórica</strong>
+            <span>Carregue os dados oficiais da Caixa para ver frequência, atraso e padrões dos números.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon" style="background:#FEF3DC">🎲</div>
+          <div class="step-body">
+            <strong>Gere e confira os jogos</strong>
+            <span>Gere combinações diversificadas e confira seus jogos salvos com o resultado oficial.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loterias disponíveis -->
+    <div class="card">
+      <div class="sec-label">Loterias disponíveis</div>
+      <div class="loterias">
+        <div class="loteria-chip chip-lotofacil">
+          <span class="nome">Lotofácil</span>
+          <span class="detalhe">15 de 25 números</span>
+        </div>
+        <div class="loteria-chip chip-mega">
+          <span class="nome">Mega-Sena</span>
+          <span class="detalhe">6 de 60 números</span>
+        </div>
+        <div class="loteria-chip chip-lotomania">
+          <span class="nome">Lotomania</span>
+          <span class="detalhe">50 de 100 números</span>
+        </div>
+      </div>
+    </div>
+    <!-- Aviso de isenção -->
+    <div class="aviso-card">
+      <div class="aviso-titulo">⚠️ Aviso importante</div>
+      <div class="aviso-texto" id="avisoTexto"></div>
+    </div>
+    <!-- Aviso de isenção -->
+   
+
+    <!-- Aceite -->
+    <label class="aceite">
+      <input type="checkbox" id="chkAceite" onchange="toggleBtn()">
+      <span class="aceite-texto">
+        <strong>Li e entendi o aviso acima.</strong> Estou ciente de que esta ferramenta não garante resultados e que
+        jogo por conta e risco próprio.
+      </span>
+    </label>
+
+    <!-- Botão entrar -->
+    <button class="btn-entrar" id="btnEntrar" disabled onclick="entrar()">
+      Acessar o sistema
+    </button>
+
+    <footer>gerador de loterias © 2026 — uso pessoal</footer>
+
+  </div>
+
+  <script>
+    function toggleBtn() {
+      const chk = document.getElementById('chkAceite');
+      const btn = document.getElementById('btnEntrar');
+      btn.disabled = !chk.checked;
+    }
+
+    function entrar() {
+      // Salva que o usuário aceitou os termos
+      sessionStorage.setItem('aceite_termos', '1');
+      // Redireciona para a página principal (ajuste o destino se precisar)
+      window.location.href = 'index.html';
+    }
+    const frases = [
+      "Esta ferramenta é de uso exclusivamente estatístico e educacional. Os jogos gerados são baseados em análise de frequência histórica e não garantem, de forma alguma, qualquer resultado nos sorteios.",
+      "Loterias são jogos de azar. Cada sorteio é um evento independente e os resultados anteriores não influenciam os próximos. Jogue com responsabilidade e nunca aposte mais do que pode perder.",
+      "O desenvolvedor desta ferramenta não se responsabiliza por perdas financeiras, decisões de jogo ou qualquer dano decorrente do uso deste sistema."
+    ];
+
+    let fraseIdx = 0;
+    let charIdx = 0;
+    let textoAtual = '';
+    const el = document.getElementById('avisoTexto');
+
+    // Checkbox bloqueado até a animação terminar
+    document.getElementById('chkAceite').disabled = true;
+
+    function digitar() {
+      if (fraseIdx >= frases.length) {
+        // Animação terminou — libera o checkbox
+        document.getElementById('chkAceite').disabled = false;
+        return;
+      }
+
+      const frase = frases[fraseIdx];
+
+      if (charIdx < frase.length) {
+        textoAtual += frase[charIdx];
+        charIdx++;
+        atualizarTexto();
+        setTimeout(digitar, 18);
+      } else {
+        // Frase concluída — próxima
+        fraseIdx++;
+        charIdx = 0;
+        textoAtual += '\n\n';
+        atualizarTexto();
+        setTimeout(digitar, 300);
+      }
+    }
+
+    function atualizarTexto() {
+      el.innerHTML = textoAtual
+        .split('\n\n')
+        .filter(p => p.trim())
+        .map(p => `<p>${p}<span class="cursor">|</span></p>`)
+        .join('');
+
+      // cursor só na última linha
+      el.querySelectorAll('.cursor').forEach((c, i, arr) => {
+        if (i < arr.length - 1) c.remove();
+      });
+    }
+
+    // Inicia a digitação
+    digitar();
+  </script>
+
+</body>
+
+</html>

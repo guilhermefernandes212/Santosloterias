@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotomania — Gerador de Desenvolvimento</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+   
+</head>
+
+<body class="lotomania">
+    <div class="page">
+        <header>
+            <h1>Lotomania</h1>
+            <p>Gerador de desenvolvimento — selecione as fixas e configure o jogo</p>
+        </header>
+
+        <div class="modo-links">
+            <a class="modo-link lotofacil-ativo" href="index.html">Lotofácil</a>
+            <a class="modo-link megasena-ativo" href="megasena.html">Mega-Sena</a>
+            <a class="modo-link lotomania-ativo" href="lotomania.html">Lotomania</a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab ativo" onclick="setTab('gerar', this)">Gerar jogos</button>
+            <button class="tab" onclick="setTab('historico', this)">Histórico</button>
+        </div>
+
+        <div class="tab-content ativo" id="tab-gerar">
+
+            <!-- CARD: GRID DE DEZENAS -->
+            <div class="card">
+                <div class="sec-label">Dezenas fixas — clique para selecionar</div>
+                <div class="grid-dez" id="gridDez"></div>
+
+                <div class="fixas-config">
+                    <div class="inp-group fixas-qtd">
+                        <label for="qtdFixas">Quantidade de fixas</label>
+                        <input type="number" id="qtdFixas" min="1" max="99" value="49" />
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <div class="n" id="sFixas">0</div>
+                        <div class="l">Fixas</div>
+                    </div>
+                    <div class="stat">
+                        <div class="n" id="sLivres">0</div>
+                        <div class="l">Livres</div>
+                    </div>
+                    <div class="stat">
+                        <div class="n" id="sComb">—</div>
+                        <div class="l">Combinações</div>
+                    </div>
+                </div>
+
+                <div class="row2">
+                    <div class="inp-group">
+                        <label>Dezenas por jogo</label>
+                        <select id="selDezJogo" disabled>
+                            <option value="50" selected>50 dezenas</option>
+                        </select>
+                    </div>
+                    <div class="inp-group">
+                        <label>Quantidade de jogos</label>
+                        <select id="selJogos">
+                            <option value="5">5 jogos</option>
+                            <option value="10" selected>10 jogos</option>
+                            <option value="15">15 jogos</option>
+                            <option value="20">20 jogos</option>
+                            <option value="30">30 jogos</option>
+                            <option value="50">50 jogos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="aviso" id="aviso"></div>
+                <div class="acoes" style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                    <button class="btn btn-lotomania" id="btnGerar">Gerar jogos</button>
+                    <button class="btn btn-sm" id="btnZeroAcertos">Gerar zero acertos</button>
+                </div>
+            </div>
+
+            <!-- CARD: METODOLOGIA 29+63 -->
+            <div class="card" id="secMetodologia" style="margin-top:16px">
+                <div class="jogos-header">
+                    <div>
+                        <div class="sec-label">Metodologia 29+63</div>
+                        <p class="mini-copy">29 fixos + 9 grupos de 7 variáveis — selecione o modo</p>
+                    </div>
+                    <button class="btn btn-sm btn-lotomania" onclick="gerarJogosMetodologiaAction()">Gerar jogos</button>
+                </div>
+                <!-- Toggle de modo -->
+                <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+                    <button class="btn btn-sm btn-modo-metod btn-lotomania" data-modo="c93"
+                        onclick="setModoMetod('c93')"
+                        title="C(9,3) completo — 84 apostas, toda combinação de 3 grupos">
+                        C(9,3) &mdash; 84 apostas
+                    </button>
+                    <button class="btn btn-sm btn-modo-metod" data-modo="cover2"
+                        onclick="setModoMetod('cover2')"
+                        title="Covering design t=2 — 12 apostas ótimas que cobrem todos os pares de grupos">
+                        Covering t=2 &mdash; 12 apostas
+                    </button>
+                </div>
+                <div id="metodApostasInfo" class="analise-status" style="margin-bottom:8px">
+                    84 apostas &mdash; C(9,3) completo
+                </div>
+
+                <div id="metodStatus">
+                    Carregue a análise e clique em "Aplicar dica" para ativar esta seção.
+                </div>
+
+                <div id="metodCorpo" style="display:none">
+                    <!-- Painel de escolha de fixas -->
+                    <div class="metod-fixas-panel">
+                        <div style="display:flex;align-items:center;justify-content:space-between">
+                            <div class="mini-label" style="margin:0">Escolher os 29 fixos</div>
+                            <button class="btn btn-sm btn-lotomania" onclick="aplicarFixosMetodologia('combinado')">Aplicar</button>
+                        </div>
+                        <div class="metod-fixas-opcoes" id="fixasOpcoes">
+                            <div class="fixas-opcao selecionada" onclick="selecionarOpcaoFixas('combinado', this)">
+                                <div class="fixas-opcao-titulo">Score combinado</div>
+                                <div class="fixas-opcao-dez" id="previewCombinado"></div>
+                            </div>
+                            <div class="fixas-opcao" onclick="selecionarOpcaoFixas('quentes', this)">
+                                <div class="fixas-opcao-titulo">Quentes recentes</div>
+                                <div class="fixas-opcao-dez" id="previewQuentes"></div>
+                            </div>
+                            <div class="fixas-opcao" onclick="selecionarOpcaoFixas('atrasadas', this)">
+                                <div class="fixas-opcao-titulo">Mais atrasadas</div>
+                                <div class="fixas-opcao-dez" id="previewAtrasadas"></div>
+                            </div>
+                        </div>
+                        <div id="painelFixasStatus" class="analise-status" style="margin-top:8px;display:none">
+                            Carregue a análise para ver sugestões de fixas.
+                        </div>
+                    </div>
+                    <div class="mini-label" style="margin-top:8px">Fixos aplicados (29)</div>
+                    <div class="metod-fixas-wrap" id="metodFixasWrap"></div>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+                        <div class="mini-label">Grupos variáveis (9 × 7 = 63)</div>
+                        <button class="btn btn-sm" onclick="redistribuirTodosGrupos()">
+                            Redistribuir todos
+                        </button>
+                    </div>
+                    <p class="metod-info">Clique numa dezena para trocar manualmente. Use o ícone de refresh para redistribuir um grupo.</p>
+                    <div class="metod-grupos-grid" id="metodGruposWrap"></div>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+                        <div class="mini-label">Otimizar score esperado</div>
+                        <button class="btn btn-sm" id="btnOtimizar" onclick="rodarOtimizador()">Otimizar grupos</button>
+                    </div>
+                    <p class="metod-info">Reorganiza os grupos para maximizar o score médio com base no histórico real de sorteios.</p>
+                    <div id="otimStatus"></div>
+                    <div id="otimResultado" style="display:none"></div>
+                </div>
+            </div>
+
+            <!-- CARD: JOGOS DA METODOLOGIA -->
+            <div class="card" id="secJogosMetod" style="display:none;margin-top:16px">
+                <div class="jogos-header">
+                    <div class="sec-label" id="lblJogosMetod">84 jogos — metodologia 29+63</div>
+                    <button class="btn btn-sm btn-danger" onclick="limparJogosMetod()">Limpar</button>
+                </div>
+                <div class="jogos-wrap" id="jogosWrapMetod"></div>
+                <div class="acoes">
+                    <button class="btn" id="btnCopiarMetod" onclick="copiarJogosMetod()">Copiar jogos</button>
+                    <button class="btn" id="btnSalvarMetod" onclick="salvarHistoricoMetod()">Salvar no histórico</button>
+                </div>
+            </div>
+
+            <!-- CARD: ANÁLISE ONLINE -->
+            <div class="card dicas-card" id="secAnalise" style="margin-top:16px">
+                <div class="jogos-header">
+                    <div>
+                        <div class="sec-label">Painel de dica online</div>
+                        <p class="mini-copy">Dados históricos puxados da internet, com filtros e ranking.</p>
+                    </div>
+                    <button class="btn btn-sm" id="btnCarregarAnalise">Carregar análise</button>
+                </div>
+
+                <div class="analise-status" id="analiseStatus">Nenhuma análise carregada.</div>
+
+                <div class="odds-panel" style="margin-top:8px">
+                    <div class="mini-stats">
+                        <div>
+                            <strong id="dConcursos">-</strong>
+                            <span>concursos</span>
+                        </div>
+                        <div>
+                            <strong id="dUltimo">-</strong>
+                            <span>ultimo</span>
+                        </div>
+                        <div>
+                            <strong id="dRecorte">-</strong>
+                            <span>recorte</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dica-section" style="margin-top:8px">
+                    <div class="mini-label">Melhores dezenas combinadas</div>
+                    <div class="rank-dezenas" id="melhoresDezenas"></div>
+                </div>
+
+                <div class="dica-grid" style="margin-top:8px">
+                    <div>
+                        <div class="mini-label">Quentes recentes</div>
+                        <div class="rank-dezenas compact" id="quentesRecentes"></div>
+                    </div>
+                    <div>
+                        <div class="mini-label">Mais atrasadas</div>
+                        <div class="rank-dezenas compact" id="atrasadasDezenas"></div>
+                    </div>
+                </div>
+
+                <div class="dica-section" style="margin-top:8px">
+                    <div class="mini-label">Padrões que mais aparecem</div>
+                    <div class="padroes-lista" id="listaPadroes"></div>
+                </div>
+
+                <div class="dica-section" style="margin-top:8px">
+                    <div class="mini-label">Dicas para filtrar</div>
+                    <div class="dicas-texto" id="dicasTexto"></div>
+                </div>
+
+                <div style="margin-top:8px">
+                    <button class="btn" id="btnAplicarDicas" disabled>Aplicar dica nas fixas</button>
+                </div>
+            </div>
+
+            <!-- CARD: JOGOS NORMAIS -->
+            <div class="card" id="secJogos" style="display:none;margin-top:16px">
+                <div class="jogos-header">
+                    <div class="sec-label" id="lblJogos">Jogos gerados</div>
+                    <button class="btn btn-sm btn-danger" onclick="limparJogos()">Limpar</button>
+                </div>
+                <div class="jogos-wrap" id="jogosWrap"></div>
+                <div class="acoes">
+                    <button class="btn" id="btnCopiar" onclick="copiarJogos()">Copiar jogos</button>
+                    <button class="btn" id="btnSalvar" onclick="salvarHistorico()">Salvar no histórico</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA: HISTÓRICO -->
+        <div class="tab-content" id="tab-historico">
+            <div class="card">
+                <div class="jogos-header">
+                    <div class="sec-label">Histórico de jogos</div>
+                    <button class="btn btn-sm btn-danger" onclick="limparHistorico()">Limpar tudo</button>
+                </div>
+                <div class="concurso-busca" style="margin:12px 0">
+                    <input type="number" id="inputConcurso" placeholder="Nº do concurso (ex: 2500)" min="1" />
+                    <button class="btn btn-sm" onclick="buscarConcursoManual()">Buscar</button>
+                    <button class="btn btn-sm" onclick="buscarUltimo()">Último</button>
+                </div>
+                <div id="concursoStatus" class="analise-status" style="display:none"></div>
+                <div id="histConteudo"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDownload" class="modal">
+        <div class="modal-content">
+            <h3>Deseja baixar os jogos?</h3>
+            <p>Os jogos serão salvos em um arquivo .txt</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="confirmarDownload()">Sim, baixar</button>
+                <button class="btn btn-secondary" onclick="fecharModal()">Não, obrigado</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>lotomania gerador © 2026</footer>
+    <script src="lotomania.js"></script>
+</body>
+
+</html>

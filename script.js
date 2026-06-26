@@ -1,13 +1,53 @@
-const MAX_FIXAS = 14;
+/**
+ * @template T
+ * @param {string} id
+ * @returns {T}
+ */
+function getEl(id) {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Missing element: ${id}`);
+  return /** @type {T} */ (el);
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLInputElement}
+ */
+function getInput(id) {
+  return getEl(id);
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLSelectElement}
+ */
+function getSelect(id) {
+  return getEl(id);
+}
+/** @param {string} id
+ * @returns {HTMLButtonElement}
+ */
+function getButton(id) {
+  return getEl(id);
+}
+/** @typedef {{ top: number[] }} DicaAplicavel */
+/** @typedef {{ data: string; fixas: number[]; dezenas_por_jogo: number; jogos: number[][] }} HistoryEntry */
+
 const CAIXA_LOTOFACIL_API = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil';
 const CACHE_HISTORICO_KEY = 'loto_resultados_online_v2';
 const CORS_PROXY_BUILDERS = [
+  /** @param {string} url */
   url => url,
+  /** @param {string} url */
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  /** @param {string} url */
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  /** @param {string} url */
   url => `https://proxy.corsfix.com/?url=${encodeURIComponent(url)}`,
+  /** @param {string} url */
   url => `https://bypass.cors.rest/proxy?url=${encodeURIComponent(url)}`
 ];
+/** @type {Set<string>} */
 const hostsComCorsBloqueado = new Set();
 const LOTOFACIL_SEEDS = [
   {
@@ -19,6 +59,7 @@ const LOTOFACIL_SEEDS = [
     url: 'https://cdn.jsdelivr.net/gh/guilhermeasn/loteria.json@master/data/lotofacil.json'
   }
 ];
+/** @type {Record<number, { 13: number; 14: number }>} */
 const PROB_OFICIAL = {
   15: { 13: 692, 14: 21792 },
   16: { 13: 162, 14: 3027 },
@@ -28,11 +69,23 @@ const PROB_OFICIAL = {
   20: { 13: 4.2, 14: 17 }
 };
 const MOLDURA = new Set([1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]);
+/** @type {Set<number>} */
 const fixasSel = new Set();
+/** @type {number[][]} */
 let jogosGerados = [];
+/** @type {number[][]} */
 let livresSelecionados = [];
+/** @type {DicaAplicavel | null} */
 let dicaAplicavel = null;
 
+/** @returns {number} */
+function getQtdFixasDesejada() {
+  const el = /** @type {HTMLInputElement | null} */ (document.getElementById('qtdFixas'));
+  const valor = parseInt(el?.value ?? '', 10);
+  return Number.isFinite(valor) ? Math.max(1, Math.min(25, valor)) : 14;
+}
+
+/** @returns {number[]} */
 function getLivres() {
   const livres = [];
   for (let i = 1; i <= 25; i++) {
@@ -41,8 +94,11 @@ function getLivres() {
   return livres;
 }
 
+/** @param {number} n */
 function fmt(n) { return n < 10 ? '0' + n : '' + n; }
 
+/** @param {number} n
+ *  @param {number} k */
 function comb(n, k) {
   if (k < 0 || k > n) return 0;
   let r = 1;
@@ -50,8 +106,16 @@ function comb(n, k) {
   return Math.round(r);
 }
 
+/** @param {number[]} arr
+ *  @param {number} k
+ *  @returns {number[][]} */
 function combinations(arr, k) {
+  /** @type {number[][]} */
   const res = [];
+  /**
+   * @param {number} start
+   * @param {number[]} cur
+   */
   function bt(start, cur) {
     if (cur.length === k) { res.push([...cur]); return; }
     for (let i = start; i < arr.length; i++) {
@@ -62,14 +126,21 @@ function combinations(arr, k) {
   return res;
 }
 
+/** @param {number[]} a
+ *  @param {number[]} b
+ *  @returns {number} */
 function distancia(a, b) {
-  const sa = new Set(a), sb = new Set(b);
+  const sa = new Set(a);
+  const sb = new Set(b);
   let d = 0;
   for (const x of sa) if (!sb.has(x)) d++;
   for (const x of sb) if (!sa.has(x)) d++;
   return d;
 }
 
+/** @param {number[][]} todos
+ *  @param {number} n
+ *  @returns {number[][]} */
 function selecionarDiversos(todos, n) {
   if (n >= todos.length) return todos.slice();
   const pool = [...todos];
@@ -89,39 +160,85 @@ function selecionarDiversos(todos, n) {
   return sel;
 }
 
+/**
+ * Gera jogos otimizados quando há exatamente 14 fixas.
+ * @param {number[]} fixas
+ * @param {number[]} poolLivres
+ * @param {number} qtdJogos
+ * @param {{ dezenas: number[] }} ultimoResultado
+ * @returns {number[][]}
+ */
+function gerarJogosOtimizados(fixas, poolLivres, qtdJogos, ultimoResultado) {
+  const somaFixas = fixas.reduce((a, b) => a + b, 0);
+  const paresFixas = fixas.filter(n => n % 2 === 0).length;
+
+  // Com 14 fixas em Lotofácil, sobra exatamente 1 número livre por jogo.
+  const todasCombinacoesLivres = combinations(poolLivres, 1);
+  const combinacoesFiltradas = todasCombinacoesLivres.filter(livres => {
+    const somaLivres = livres[0];
+    const somaTotal = somaFixas + somaLivres;
+    if (somaTotal < 180 || somaTotal > 220) return false;
+
+    const paresLivres = livros[0] % 2 === 0 ? 1 : 0;
+    const totalPares = paresFixas + paresLivres;
+    if (totalPares < 7 || totalPares > 9) return false;
+
+    return true;
+  });
+
+  const jogosParaUsar = combinacoesFiltradas.length >= qtdJogos
+    ? combinacoesFiltradas
+    : todasCombinacoesLivres;
+
+  const candidatos = jogosParaUsar.filter(livres => {
+    const jogoCompleto = [...fixas, ...livres].sort((a, b) => a - b);
+    return distancia(jogoCompleto, ultimoResultado.dezenas || []) > 0;
+  });
+
+  const finalPool = candidatos.length ? candidatos : jogosParaUsar;
+  const selecionados = selecionarDiversos(finalPool, Math.min(qtdJogos, finalPool.length));
+  return selecionados.map(livres => [...fixas, ...livres].sort((a, b) => a - b));
+}
+
+/** @param {string} texto */
 function mostrarAviso(texto) {
-  const aviso = document.getElementById('aviso');
+  const aviso = /** @type {HTMLElement | null} */ (document.getElementById('aviso'));
+  if (!aviso) return;
   aviso.style.display = 'block';
   aviso.textContent = texto;
 }
 
+/** @param {HTMLElement} el
+ *  @param {string=} tipo */
 function renderDezena(el, tipo) {
-  const n = parseInt(el.dataset.n);
+  const n = parseInt(el.dataset.n ?? '0', 10);
   const paridade = n % 2 === 0 ? 'par' : 'impar';
   el.className = 'dez ' + (tipo ? tipo : paridade);
 }
 
 function sincronizarGrades() {
   document.querySelectorAll('#gridDez .dez').forEach((b) => {
-    const n = parseInt(b.dataset.n);
-    renderDezena(b, fixasSel.has(n) ? 'fixa' : '');
+    const el = /** @type {HTMLElement} */ (b);
+    const n = parseInt(el.dataset.n ?? '0', 10);
+    renderDezena(el, fixasSel.has(n) ? 'fixa' : '');
   });
 }
 
 // Grade de dezenas fixas
-const grid = document.getElementById('gridDez');
+const grid = getEl('gridDez');
 for (let i = 1; i <= 25; i++) {
   const b = document.createElement('div');
   const paridade = i % 2 === 0 ? 'par' : 'impar';
   b.className = 'dez ' + paridade;
   b.textContent = fmt(i);
-  b.dataset.n = i;
+  b.dataset.n = String(i);
   b.addEventListener('click', () => {
     if (fixasSel.has(i)) {
       fixasSel.delete(i);
     } else {
-      if (fixasSel.size >= MAX_FIXAS) {
-        mostrarAviso('As fixas estao travadas em no maximo 14 dezenas.');
+      const limiteFixas = getQtdFixasDesejada();
+      if (fixasSel.size >= limiteFixas) {
+        mostrarAviso(`Máximo de ${limiteFixas} dezenas fixas atingido. Altere a quantidade de fixas para selecionar mais.`);
         return;
       }
       fixasSel.add(i);
@@ -134,57 +251,82 @@ for (let i = 1; i <= 25; i++) {
 
 
 function atualizar() {
-  const dezJogo = parseInt(document.getElementById('selDezJogo').value);
+  const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
+  const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres();
   const livresPorJogo = dezJogo - fixasSel.size;
   const nComb = livresPorJogo >= 0 && livresPorJogo <= livresPool.length
     ? comb(livresPool.length, livresPorJogo) : 0;
 
-  document.getElementById('sFixas').textContent = fixasSel.size;
-  document.getElementById('sLivres').textContent = livresPool.length;
-  document.getElementById('sComb').textContent = nComb > 9999
-    ? (nComb / 1000).toFixed(1) + 'k' : nComb || '-';
+  getEl('sFixas').textContent = String(fixasSel.size);
+  getEl('sLivres').textContent = String(livresPool.length);
+  getEl('sComb').textContent = nComb > 9999
+    ? (nComb / 1000).toFixed(1) + 'k' : String(nComb || '-');
   atualizarOdds();
 
-  const aviso = document.getElementById('aviso');
-  if (fixasSel.size === 0) {
-    mostrarAviso('Selecione pelo menos 1 dezena fixa.');
+  const aviso = getEl('aviso');
+  if (fixasSel.size > qtdFixas) {
+    mostrarAviso(`Você selecionou ${fixasSel.size} fixas, mas a quantidade configurada é ${qtdFixas}. Remova algumas dezenas ou aumente a quantidade.`);
   } else if (livresPorJogo < 0) {
     mostrarAviso(`Fixas (${fixasSel.size}) maiores que dezenas por jogo (${dezJogo}). Aumente as dezenas por jogo.`);
   } else if (nComb === 0) {
     mostrarAviso('Sem combinacoes possiveis com essa configuracao.');
+  } else if (fixasSel.size === 0) {
+    mostrarAviso('Nenhuma dezena fixa selecionada. Os jogos serão gerados apenas com números livres.');
   } else {
     aviso.style.display = 'none';
   }
 }
 
-document.getElementById('selDezJogo').addEventListener('change', atualizar);
-document.getElementById('selJogos').addEventListener('change', atualizar);
+getSelect('selDezJogo').addEventListener('change', atualizar);
+getSelect('selJogos').addEventListener('change', atualizar);
+getInput('qtdFixas').addEventListener('input', atualizar);
 
 // login removed - app opens directly
 
-document.getElementById('btnGerar').addEventListener('click', () => {
+getEl('btnGerar').addEventListener('click', () => {
   const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-  const dezJogo = parseInt(document.getElementById('selDezJogo').value);
-  const nJogos = parseInt(document.getElementById('selJogos').value);
+  const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
+  const nJogos = parseInt(getSelect('selJogos').value, 10);
+  const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres().sort((a, b) => a - b);
-  const livresPorJogo = dezJogo - fixas.length;
+  const livrosPorJogo = dezJogo - fixas.length;
 
-  if (fixas.length === 0 || fixas.length > MAX_FIXAS || livresPorJogo < 0 || comb(livresPool.length, livresPorJogo) === 0) return;
+  if (fixas.length > qtdFixas) {
+    mostrarAviso(`Você selecionou ${fixas.length} fixas, mas a quantidade configurada é ${qtdFixas}. Ajuste a quantidade de fixas ou remova algumas dezenas.`);
+    return;
+  }
 
-  const todos = combinations(livresPool, livresPorJogo);
-  const n = Math.min(nJogos, todos.length);
-  livresSelecionados = selecionarDiversos(todos, n);
-  jogosGerados = livresSelecionados.map(livres =>
-    [...fixas, ...livres].sort((a, b) => a - b));
+  if (livrosPorJogo < 0) {
+    mostrarAviso(`Fixas (${fixas.length}) maiores que dezenas por jogo (${dezJogo}). Aumente as dezenas por jogo ou remova fixas.`);
+    return;
+  }
+
+  if (comb(livresPool.length, livrosPorJogo) === 0) {
+    mostrarAviso('Sem combinações possíveis com essa configuração. Verifique a quantidade de fixas e dezenas por jogo.');
+    return;
+  }
+
+  if (fixas.length === 14 && dezJogo === 15) {
+    jogosGerados = gerarJogosOtimizados(fixas, livresPool, nJogos, ultimoResultado || { dezenas: [] });
+  } else {
+    const todos = combinations(livresPool, livrosPorJogo);
+    const n = Math.min(nJogos, todos.length);
+    livresSelecionados = selecionarDiversos(todos, n);
+    jogosGerados = livresSelecionados.map(livres =>
+      [...fixas, ...livres].sort((a, b) => a - b));
+  }
 
   renderJogos(jogosGerados, fixas);
-  document.getElementById('lblJogos').textContent =
+  getEl('lblJogos').textContent =
     `${jogosGerados.length} jogos gerados - OK, sem repeticao`;
-  document.getElementById('secJogos').style.display = 'block';
+  getEl('secJogos').style.display = 'block';
   mostrarModal();
 });
 
+/** @param {Set<number>} marcados
+ *  @param {Set<number>} fixas
+ *  @param {Set<number>=} acertos */
 function renderCartao(marcados, fixas, acertos) {
   // marcados = Set de dezenas marcadas no jogo
   // fixas = Set de fixas (cor diferente)
@@ -206,9 +348,11 @@ function renderCartao(marcados, fixas, acertos) {
   return html;
 }
 
+/** @param {number[][]} jogos
+ *  @param {number[]} fixas */
 function renderJogos(jogos, fixas) {
   const fs = new Set(fixas);
-  const wrap = document.getElementById('jogosWrap');
+  const wrap = getEl('jogosWrap');
   wrap.innerHTML = '';
   jogos.forEach((jogo, i) => {
     const card = document.createElement('div');
@@ -226,7 +370,7 @@ function renderJogos(jogos, fixas) {
 function limparJogos() {
   jogosGerados = [];
   livresSelecionados = [];
-  document.getElementById('secJogos').style.display = 'none';
+  getEl('secJogos').style.display = 'none';
 }
 
 function copiarJogos() {
@@ -237,7 +381,7 @@ function copiarJogos() {
     txt += `Jogo ${i + 1}: ${j.map(fmt).join(' - ')}\n`;
   });
   navigator.clipboard.writeText(txt).then(() => {
-    const btn = document.getElementById('btnCopiar');
+    const btn = getButton('btnCopiar');
     btn.textContent = 'Copiado!';
     setTimeout(() => btn.textContent = 'Copiar jogos', 2000);
   });
@@ -249,6 +393,7 @@ function getHistorico() {
   catch { return []; }
 }
 
+/** @param {unknown[]} h */
 function setHistorico(h) {
   localStorage.setItem('loto_historico', JSON.stringify(h));
 }
@@ -256,7 +401,7 @@ function setHistorico(h) {
 function salvarHistorico() {
   if (!jogosGerados.length) return;
   const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-  const dezJogo = parseInt(document.getElementById('selDezJogo').value);
+  const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
   const h = getHistorico();
   h.unshift({
     data: new Date().toLocaleString('pt-BR'),
@@ -266,7 +411,7 @@ function salvarHistorico() {
   });
   setHistorico(h);
   renderHistorico();
-  const btn = document.getElementById('btnSalvar');
+  const btn = getEl('btnSalvar');
   btn.textContent = 'Salvo!';
   setTimeout(() => btn.textContent = 'Salvar no historico', 2000);
 }
@@ -278,15 +423,20 @@ function limparHistorico() {
   }
 }
 
+/** @typedef {{ numero: number; data: string; dezenas: Set<number>; lista: number[] }} ResultadoConcurso */
+/** @type {ResultadoConcurso | null} */
 let ultimoResultado = null;
 
+/** @param {string} msg
+ *  @param {string} cor */
 function setStatusConcurso(msg, cor) {
-  const el = document.getElementById('concursoStatus');
+  const el = getEl('concursoStatus');
   el.style.display = msg ? 'block' : 'none';
   el.textContent = msg || '';
   el.style.color = cor || 'var(--text2)';
 }
 
+/** @param {number|null} numero */
 async function buscarConcurso(numero) {
   const base = numero
     ? `${CAIXA_LOTOFACIL_API}/${numero}`
@@ -311,7 +461,7 @@ async function buscarUltimo() {
   const res = await buscarConcurso(null);
   if (res) {
     ultimoResultado = res;
-    document.getElementById('inputConcurso').value = res.numero;
+    getInput('inputConcurso').value = String(res.numero);
     setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--verde)');
     renderHistorico();
   } else {
@@ -320,8 +470,8 @@ async function buscarUltimo() {
 }
 
 async function buscarConcursoManual() {
-  const input = document.getElementById('inputConcurso');
-  const num = parseInt(input.value);
+  const input = getInput('inputConcurso');
+  const num = parseInt(input.value, 10);
   if (!num || num < 1) {
     setStatusConcurso('Digite um número de concurso válido.', '#c0392b');
     return;
@@ -343,6 +493,9 @@ async function buscarUltimoResultado() {
   return false;
 }
 
+/** @param {number[]} jogo
+ *  @param {number} idx
+ *  @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }} resultado */
 function renderJogoComAcertos(jogo, idx, resultado) {
   const acertos = jogo.filter(n => resultado.dezenas.has(n));
   const pts = acertos.length;
@@ -365,9 +518,13 @@ function renderJogoComAcertos(jogo, idx, resultado) {
     </div>`;
 }
 
+/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
+/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
+/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
+/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
 function renderHistorico(resultado) {
-  const h = getHistorico();
-  const el = document.getElementById('histConteudo');
+  const h = /** @type {HistoryEntry[]} */ (getHistorico());
+  const el = getEl('histConteudo');
   if (!h.length) {
     el.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:1rem 0">Nenhum jogo salvo ainda.</p>';
     return;
@@ -381,7 +538,7 @@ function renderHistorico(resultado) {
        </div>`
     : '';
 
-  el.innerHTML = resultadoHTML + h.map((entrada) => `
+  el.innerHTML = resultadoHTML + h.map((/** @type {HistoryEntry} */ entrada) => `
     <div class="hist-item">
       <div class="hist-header">
         <span class="hist-data">${entrada.data}</span>
@@ -398,11 +555,13 @@ function renderHistorico(resultado) {
   `).join('');
 }
 
+/** @param {string} id
+ *  @param {HTMLElement} el */
 function setTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('ativo'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('ativo'));
   el.classList.add('ativo');
-  document.getElementById('tab-' + id).classList.add('ativo');
+  getEl('tab-' + id).classList.add('ativo');
   if (id === 'historico') carregarHistorico();
 }
 
@@ -413,8 +572,8 @@ async function carregarHistorico() {
   if (!ultimoResultado) {
     setStatusConcurso('Buscando último resultado...', 'var(--text2)');
     const ok = await buscarUltimoResultado();
-    if (ok) {
-      document.getElementById('inputConcurso').value = ultimoResultado.numero;
+    if (ok && ultimoResultado) {
+      getInput('inputConcurso').value = String(ultimoResultado.numero);
       setStatusConcurso(`Concurso ${ultimoResultado.numero}${ultimoResultado.data ? ' — ' + ultimoResultado.data : ''} carregado.`, 'var(--verde)');
     } else {
       setStatusConcurso('Não foi possível buscar o resultado. Use o campo acima para buscar manualmente.', '#c0392b');
@@ -423,10 +582,12 @@ async function carregarHistorico() {
   renderHistorico();
 }
 
+/** @param {number} n */
 function fmtDenominador(n) {
   return n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
 }
 
+/** @param {number} n */
 function fmtProb(n) {
   return (100 / n).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
@@ -435,23 +596,26 @@ function fmtProb(n) {
 }
 
 function atualizarOdds() {
-  const sel = document.getElementById('selDezJogo');
-  const dezJogo = parseInt(sel.value);
+  const sel = getSelect('selDezJogo');
+  const dezJogo = parseInt(sel.value, 10);
   const odds = PROB_OFICIAL[dezJogo];
-  const titulo = document.getElementById('oddsTitulo');
-  const odds13 = document.getElementById('odds13');
-  const odds14 = document.getElementById('odds14');
-  if (!odds || !titulo || !odds13 || !odds14) return;
+  const titulo = getEl('oddsTitulo');
+  const odds13 = getEl('odds13');
+  const odds14 = getEl('odds14');
+  if (!odds) return;
   titulo.textContent = `Chance oficial com ${dezJogo} dezenas`;
   odds13.textContent = `1 em ${fmtDenominador(odds[13])} (${fmtProb(odds[13])})`;
   odds14.textContent = `1 em ${fmtDenominador(odds[14])} (${fmtProb(odds[14])})`;
 }
 
-function normalizarConcursoApi(valor, fallbackNumero) {
+/** @param {any} valor
+ *  @param {number=} fallbackNumero
+ *  @returns {{ numero: number; data: string; dezenas: number[] }} */
+function normalizarConcursoApi(valor, fallbackNumero = 0) {
   const lista = valor && (valor.listaDezenas || valor.dezenas || valor.resultado || valor.dezenasSorteadasOrdemSorteio);
   const dezenas = [...new Set((lista || [])
-    .map(n => parseInt(n, 10))
-    .filter(n => Number.isInteger(n) && n >= 1 && n <= 25))]
+    .map((/** @type {any} */ n) => parseInt(n, 10))
+    .filter((/** @type {number} */ n) => Number.isInteger(n) && n >= 1 && n <= 25))]
     .sort((a, b) => a - b);
   const numero = parseInt(valor && (valor.numero || valor.concurso), 10) || fallbackNumero || 0;
   return {
@@ -461,6 +625,10 @@ function normalizarConcursoApi(valor, fallbackNumero) {
   };
 }
 
+/** @param {any} data
+ *  @returns {{ numero: number; data: string; dezenas: number[] }[]} */
+/** @param {any} data
+ *  @returns {{ numero: number; data: string; dezenas: number[] }[]} */
 function normalizarConcursos(data) {
   if (data && data.listaDezenas && data.numero) {
     const unico = normalizarConcursoApi(data);
@@ -478,15 +646,21 @@ function normalizarConcursos(data) {
     .sort((a, b) => a.numero - b.numero);
 }
 
+/** @param {{ [key: string]: number }} dist
+ *  @param {string} chave */
 function addDist(dist, chave) {
   dist[chave] = (dist[chave] || 0) + 1;
 }
 
+/** @param {{ [key: string]: number }} dist
+ *  @param {number} total */
 function topDist(dist, total) {
   const [label, count] = Object.entries(dist).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0] || ['-', 0];
   return { label, count, pct: total ? count / total : 0 };
 }
 
+/** @param {number[]} lista
+ *  @param {number} p */
 function percentile(lista, p) {
   if (!lista.length) return 0;
   const sorted = [...lista].sort((a, b) => a - b);
@@ -494,6 +668,7 @@ function percentile(lista, p) {
   return sorted[idx];
 }
 
+/** @param {number[]} dezenas */
 function contarSequencias(dezenas) {
   let paresLigados = 0;
   let maiorGrupo = 1;
@@ -510,18 +685,26 @@ function contarSequencias(dezenas) {
   return { paresLigados, maiorGrupo };
 }
 
+/** @param {{ numero: number; data: string; dezenas: number[] }[]} concursos */
 function analisarConcursos(concursos) {
   const total = concursos.length;
   const recorte = concursos.slice(-Math.min(100, total));
   const freq = Array(26).fill(0);
   const freqRecente = Array(26).fill(0);
   const ultimoIndice = Array(26).fill(0);
+  /** @type {{ [key: string]: number }} */
   const distPares = {};
+  /** @type {{ [key: string]: number }} */
   const distRepetidos = {};
+  /** @type {{ [key: string]: number }} */
   const distBaixas = {};
+  /** @type {{ [key: string]: number }} */
   const distMoldura = {};
+  /** @type {{ [key: string]: number }} */
   const distSoma = {};
+  /** @type {{ [key: string]: number }} */
   const distSeq = {};
+  /** @type {number[]} */
   const somas = [];
 
   concursos.forEach((concurso, idx) => {
@@ -635,10 +818,7 @@ function preencherResumoAnalise(concursos, analise, fonte, detalhes = {}) {
   const top = analise.melhores.map(item => item.n);
   const dataUltimo = ultimo.data ? ` (${ultimo.data})` : '';
   const avisoFaltantes = detalhes.faltantes ? ` Faltaram ${detalhes.faltantes} concursos na carga.` : '';
-  dicaAplicavel = {
-    fixas: top.slice(0, MAX_FIXAS).sort((a, b) => a - b),
-    mistura: top.slice(MAX_FIXAS).sort((a, b) => a - b)
-  };
+  dicaAplicavel = { top };
 
   document.getElementById('dConcursos').textContent = analise.total.toLocaleString('pt-BR');
   document.getElementById('dUltimo').textContent = ultimo.numero.toLocaleString('pt-BR');
@@ -838,12 +1018,14 @@ async function carregarAnalise() {
 }
 
 function aplicarDicas() {
-  if (!dicaAplicavel) return;
+  if (!dicaAplicavel || !Array.isArray(dicaAplicavel.top)) return;
+  const qtdFixas = getQtdFixasDesejada();
+  const fixas = dicaAplicavel.top.slice(0, qtdFixas).sort((a, b) => a - b);
   fixasSel.clear();
-  dicaAplicavel.fixas.forEach(n => fixasSel.add(n));
+  fixas.forEach(n => fixasSel.add(n));
   sincronizarGrades();
   atualizar();
-  mostrarAviso('Dica aplicada: 14 melhores dezenas marcadas como fixas.');
+  mostrarAviso(`Dica aplicada: ${fixas.length} melhores dezenas marcadas como fixas.`);
 }
 
 // Modal de download
