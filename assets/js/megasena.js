@@ -40,27 +40,92 @@ function distancia(a, b) {
   return d;
 }
 
+// Embaralhamento uniforme (Fisher-Yates). Retorna uma cópia.
+function embaralhar(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Escolhe até n combinações bem diferentes entre si (greedy max-min),
+// guardando a menor distância de cada candidato: O(candidatos × n).
 function selecionarDiversos(todos, n) {
   if (n >= todos.length) return todos.slice();
-  const pool = [...todos];
-  const inicio = pool[Math.floor(Math.random() * pool.length)];
-  const sel = [inicio];
-  pool.splice(pool.indexOf(inicio), 1);
-  while (sel.length < n && pool.length) {
-    const melhor = pool.reduce((best, x) => {
-      const d = Math.min(...sel.map(s => distancia(x, s)));
-      const db = Math.min(...sel.map(s => distancia(best, s)));
-      return d > db ? x : best;
-    }, pool[0]);
-    sel.push(melhor);
-    pool.splice(pool.indexOf(melhor), 1);
+  const minDist = new Array(todos.length).fill(Infinity);
+  const usado = new Array(todos.length).fill(false);
+  const sel = [];
+  let idx = Math.floor(Math.random() * todos.length);
+  while (sel.length < n && idx >= 0) {
+    usado[idx] = true;
+    sel.push(todos[idx]);
+    const escolhido = new Set(todos[idx]);
+    let melhor = -1, melhorDist = -1;
+    for (let i = 0; i < todos.length; i++) {
+      if (usado[i]) continue;
+      let iguais = 0;
+      for (const x of todos[i]) if (escolhido.has(x)) iguais++;
+      const d = (todos[i].length - iguais) * 2;
+      if (d < minDist[i]) minDist[i] = d;
+      if (minDist[i] > melhorDist) { melhorDist = minDist[i]; melhor = i; }
+    }
+    idx = melhor;
   }
   return sel;
+}
+
+// Gera n combinações de k dezenas, diversas entre si, sem enumerar
+// milhões de combinações (amostra aleatória quando o total é grande).
+function gerarLivresDiversos(pool, k, n) {
+  const total = comb(pool.length, k);
+  if (total === 0) return [];
+  let candidatos;
+  if (total <= 3000) {
+    candidatos = combinations(pool, k);
+  } else {
+    const alvo = Math.min(total, Math.max(n * 40, 1500));
+    const vistos = new Set();
+    candidatos = [];
+    for (let t = 0; candidatos.length < alvo && t < alvo * 20; t++) {
+      const c = embaralhar(pool).slice(0, k).sort((a, b) => a - b);
+      const chave = c.join(',');
+      if (!vistos.has(chave)) { vistos.add(chave); candidatos.push(c); }
+    }
+  }
+  return selecionarDiversos(candidatos, Math.min(n, candidatos.length));
+}
+
+// Formata números grandes de forma legível (pt-BR).
+function fmtComb(n) {
+  if (!n || !Number.isFinite(n)) return '-';
+  const um = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  if (n >= 1e18) return n.toExponential(1).replace('.', ',').replace('e+', ' × 10^');
+  if (n >= 1e15) return um(n / 1e15) + ' quatri';
+  if (n >= 1e12) return um(n / 1e12) + ' tri';
+  if (n >= 1e9) return um(n / 1e9) + ' bi';
+  if (n >= 1e6) return um(n / 1e6) + ' mi';
+  if (n >= 1e4) return um(n / 1e3) + ' mil';
+  return n.toLocaleString('pt-BR');
+}
+
+// Escapa texto vindo de fontes externas antes de usar em innerHTML.
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function sinalTimeout(ms) {
+  return (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ms) : undefined;
 }
 
 // ── estado ────────────────────────────────────────────────────
 const fixasSel = new Set();
 let jogosGerados = [];
+// fixas e dezenas por jogo usadas na última geração (não as atuais da tela)
+let fixasGeradas = [];
+let dezJogoGerado = 0;
+let jogosJaSalvos = false;
 let ultimoResultado = null;
 let ultimaAnaliseMega = null;
 
@@ -134,11 +199,9 @@ function atualizar() {
 
   document.getElementById('sFixas').textContent = fixasSel.size;
   document.getElementById('sLivres').textContent = livresPool.length;
-  document.getElementById('sComb').textContent = nComb > 999999
-    ? (nComb / 1000000).toFixed(1) + 'M'
-    : nComb > 9999
-      ? (nComb / 1000).toFixed(1) + 'k'
-      : nComb || '-';
+  document.getElementById('sComb').textContent = fmtComb(nComb);
+  document.getElementById('btnGerar').disabled =
+    fixasSel.size === 0 || fixasSel.size > qtdFixas || livresPorJogo < 0 || nComb === 0;
 
   const aviso = document.getElementById('aviso');
   if (fixasSel.size === 0) {
@@ -155,14 +218,25 @@ function atualizar() {
 }
 
 document.getElementById('selDezJogo').addEventListener('change', atualizar);
-document.getElementById('selJogos').addEventListener('change', atualizar);
+/** Quantidade de jogos digitada (1 a QTD_JOGOS_MAX). Vazio/inválido usa o padrão. */
+const QTD_JOGOS_MAX = 200;
+function getQtdJogos() {
+  const el = /** @type {HTMLInputElement} */ (document.getElementById('selJogos'));
+  const v = parseInt(el.value, 10);
+  return Number.isFinite(v) ? Math.max(1, Math.min(QTD_JOGOS_MAX, v)) : 10;
+}
+// Ao sair do campo, mostra o valor que realmente será usado.
+document.getElementById('selJogos').addEventListener('change', (e) => {
+  /** @type {HTMLInputElement} */ (e.target).value = String(getQtdJogos());
+});
+document.getElementById('selJogos').addEventListener('input', atualizar);
 document.getElementById('qtdFixas').addEventListener('input', atualizar);
 
 // ── gerar jogos ───────────────────────────────────────────────
 document.getElementById('btnGerar').addEventListener('click', () => {
   const fixas = Array.from(fixasSel).sort((a, b) => a - b);
   const dezJogo = parseInt(document.getElementById('selDezJogo').value);
-  const nJogos = parseInt(document.getElementById('selJogos').value);
+  const nJogos = getQtdJogos();
   const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres().sort((a, b) => a - b);
   const livresPorJogo = dezJogo - fixas.length;
@@ -172,22 +246,13 @@ document.getElementById('btnGerar').addEventListener('click', () => {
   const combTotal = comb(livresPool.length, livresPorJogo);
   if (combTotal === 0) return;
 
-  // Para pools muito grandes, gera aleatoriamente em vez de enumerar tudo
-  let livresSelecionados;
-  if (combTotal > 200000) {
-    const set = new Set();
-    while (set.size < Math.min(nJogos, combTotal)) {
-      const shuffled = [...livresPool].sort(() => Math.random() - 0.5).slice(0, livresPorJogo).sort((a, b) => a - b);
-      set.add(shuffled.join(','));
-    }
-    livresSelecionados = Array.from(set).map(s => s.split(',').map(Number));
-  } else {
-    const todos = combinations(livresPool, livresPorJogo);
-    livresSelecionados = selecionarDiversos(todos, Math.min(nJogos, todos.length));
-  }
+  const livresSelecionados = gerarLivresDiversos(livresPool, livresPorJogo, nJogos);
 
   jogosGerados = livresSelecionados.map(livres =>
     [...fixas, ...livres].sort((a, b) => a - b));
+  fixasGeradas = fixas;
+  dezJogoGerado = dezJogo;
+  jogosJaSalvos = false;
 
   renderJogos(jogosGerados, fixas);
   document.getElementById('lblJogos').textContent =
@@ -221,7 +286,7 @@ function limparJogos() {
 }
 
 function copiarJogos() {
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+  const fixas = fixasGeradas;
   let txt = `MEGA-SENA - ${jogosGerados.length} jogos\n`;
   txt += `Fixas: ${fixas.map(fmt).join(' - ')}\n\n`;
   jogosGerados.forEach((j, i) => {
@@ -243,13 +308,17 @@ function setHistorico(h) { localStorage.setItem(HISTORICO_KEY, JSON.stringify(h)
 
 function salvarHistorico() {
   if (!jogosGerados.length) return;
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-  const dezJogo = parseInt(document.getElementById('selDezJogo').value);
-  const h = getHistorico();
-  h.unshift({ data: new Date().toLocaleString('pt-BR'), fixas, dezenas_por_jogo: dezJogo, jogos: jogosGerados });
-  setHistorico(h);
-  renderHistorico();
   const btn = document.getElementById('btnSalvar');
+  if (jogosJaSalvos) {
+    btn.textContent = 'Já está no histórico';
+    setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
+    return;
+  }
+  const h = getHistorico();
+  h.unshift({ data: new Date().toLocaleString('pt-BR'), fixas: fixasGeradas, dezenas_por_jogo: dezJogoGerado, jogos: jogosGerados });
+  setHistorico(h);
+  jogosJaSalvos = true;
+  renderHistorico();
   btn.textContent = 'Salvo!';
   setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
 }
@@ -274,17 +343,15 @@ function normalizarResultadoMega(data) {
 }
 
 async function buscarConcurso(numero) {
-  const base = numero ? `${CAIXA_MEGA_API}/${numero}` : CAIXA_MEGA_API;
-  const urls = CORS_PROXY_BUILDERS.map(b => b(base));
-  for (const url of urls) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const data = await r.json();
-      const norm = normalizarResultadoMega(data);
-      if (norm.dezenas.length === 6) return { ...norm, dezenas: new Set(norm.dezenas), lista: norm.dezenas };
-    } catch { /* próximo proxy */ }
-  }
+  try {
+    // Concurso específico: primeiro procura no cache local (instantâneo).
+    let c = numero ? lerCacheMega().find(x => x.numero === numero) : null;
+    if (!c) {
+      const data = numero ? await ApiLoterias.concurso('megasena', numero) : await ApiLoterias.ultimo('megasena');
+      c = normalizarResultadoMega(data);
+    }
+    if (c && c.dezenas.length === 6) return { ...c, dezenas: new Set(c.dezenas), lista: c.dezenas };
+  } catch { /* indisponível */ }
   return null;
 }
 
@@ -316,9 +383,10 @@ async function buscarConcursoManual() {
   }
 }
 
-function renderJogoComAcertos(jogo, idx, resultado) {
+function renderJogoComAcertos(jogo, idx, resultado, entradaIdx = 0) {
   const acertos = jogo.filter(n => resultado.dezenas.has(n));
   const pts = acertos.length;
+  const linha = attrsJogoConferido(pts, entradaIdx, idx);
   let badgeClass = 'acerto-badge';
   if (pts >= 6) badgeClass += ' acerto-6';
   else if (pts >= 5) badgeClass += ' acerto-5';
@@ -331,7 +399,7 @@ function renderJogoComAcertos(jogo, idx, resultado) {
   }).join('');
 
   return `
-    <div class="hist-jogo-row">
+    <div class="hist-jogo-row${linha.classe}" id="${linha.id}">
       <span class="hist-jogo-num">Jogo ${idx + 1}</span>
       <div class="hist-dez-wrap">${dezenas}</div>
       <span class="${badgeClass}">${pts} pts</span>
@@ -348,21 +416,23 @@ function renderHistorico() {
   const res = ultimoResultado;
   const resultadoHTML = res
     ? `<div class="hist-resultado">
-        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + res.data : ''}</span>
+        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + esc(res.data) : ''}</span>
         <div class="hist-resultado-dez">${res.lista.map(n => `<span class="dez-inline dez-sorteada">${fmt(n)}</span>`).join('')}</div>
        </div>`
     : '';
 
-  el.innerHTML = resultadoHTML + h.map(entrada => `
+  const idxs = indicesParaConferir(h);
+  el.innerHTML = renderSeletorConferencia(h, res) + resultadoHTML + (res ? renderResumoConferencia(h, res, idxs) : '') + h.map((entrada, ei) => !idxs.includes(ei) ? '' : `
     <div class="hist-item">
       <div class="hist-header">
-        <span class="hist-data">${entrada.data}</span>
+        <span class="hist-data">${esc(entrada.data)}</span>
         <span class="hist-badge">${entrada.jogos.length} jogos · ${entrada.dezenas_por_jogo} dez.</span>
+        ${seloPremiadosEntrada(entrada.jogos, res)}
       </div>
       <div class="hist-fixas">Fixas: ${entrada.fixas.map(fmt).join(' · ')}</div>
       <div class="hist-jogos-lista">
         ${res
-          ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res)).join('')
+          ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res, ei)).join('')
           : entrada.jogos.map((j, i) => `<div class="hist-jogo-row"><span class="hist-jogo-num">Jogo ${i+1}</span><span style="font-family:var(--mono);font-size:11px">${j.map(fmt).join(' · ')}</span></div>`).join('')
         }
       </div>
@@ -403,7 +473,7 @@ function fecharModal() {
   document.getElementById('modalDownload').classList.remove('ativa');
 }
 function confirmarDownload() {
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+  const fixas = fixasGeradas;
   let conteudo = `MEGA-SENA - ${jogosGerados.length} jogos\n`;
   conteudo += `Fixas: ${fixas.map(fmt).join(' - ')}\n`;
   conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
@@ -553,7 +623,7 @@ function normalizarMegaLista(data) {
 async function fetchJsonMega(url) {
   for (const build of CORS_PROXY_BUILDERS) {
     try {
-      const r = await fetch(build(url), { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+      const r = await fetch(build(url), { cache: 'no-store', signal: sinalTimeout(10000) });
       if (!r.ok) continue;
       return JSON.parse(await r.text());
     } catch { /* próximo */ }
@@ -579,17 +649,30 @@ function salvarCacheMega(concursos) {
 }
 
 async function carregarHistoricoMega() {
-  setStatusAnalise('Consultando último concurso da CAIXA...');
-  const ultimo = normalizarMegaConcurso(await fetchJsonMega(CAIXA_MEGA_API));
-  if (ultimo.dezenas.length !== 6) throw new Error('Último concurso sem dezenas válidas');
-
+  setStatusAnalise('Consultando último concurso...');
   const cache = lerCacheMega();
+  let ultimo;
+  try {
+    ultimo = normalizarMegaConcurso(await ApiLoterias.ultimo('megasena'));
+    if (ultimo.dezenas.length !== 6) throw new Error('Último concurso sem dezenas válidas');
+  } catch (e) {
+    // Fontes fora do ar: usa o que já está salvo no navegador.
+    if (cache.length >= 200) return { concursos: cache, fonte: 'cache local — fontes indisponíveis, pode estar desatualizado' };
+    throw e;
+  }
+
   if (cache.length && cache[cache.length - 1].numero >= ultimo.numero) {
     return { concursos: cache, fonte: 'cache local' };
   }
 
-  // tenta seed com histórico completo
+  // Faltando muitos concursos: baixa todos de uma vez (rápido);
+  // se não der, usa a base auxiliar do GitHub.
   let base = cache.length ? cache : [];
+  if (ultimo.numero - cache.length > 20) {
+    setStatusAnalise('Baixando todos os concursos de uma vez...');
+    const todos = normalizarMegaLista(await ApiLoterias.todos('megasena'));
+    if (todos.length >= 200) base = [...cache, ...todos];
+  }
   if (!base.length) {
     for (const seed of MEGA_SEEDS) {
       try {
@@ -612,13 +695,13 @@ async function carregarHistoricoMega() {
   }
   if (faltantes.length) {
     let baixados = 0;
-    const tamanhoLote = 10;
+    const tamanhoLote = ApiLoterias.paralelo;
     setStatusAnalise(`Baixando histórico completo: 0/${faltantes.length} concursos faltantes...`);
     for (let i = 0; i < faltantes.length; i += tamanhoLote) {
       const lote = faltantes.slice(i, i + tamanhoLote);
       await Promise.all(lote.map(async n => {
         try {
-          const d = await fetchJsonMega(`${CAIXA_MEGA_API}/${n}`);
+          const d = await ApiLoterias.concurso('megasena', n);
           const c = normalizarMegaConcurso(d, n);
           if (c.dezenas.length === 6) mapa.set(c.numero, c);
         } catch { /* ignora falhas pontuais */ }
@@ -633,7 +716,7 @@ async function carregarHistoricoMega() {
   const concursos = Array.from(mapa.values()).sort((a, b) => a.numero - b.numero);
   salvarCacheMega(concursos);
   const completo = concursos.length >= ultimo.numero && concursos[0] && concursos[0].numero === 1;
-  return { concursos, fonte: completo ? 'API CAIXA desde o concurso 1' : 'API CAIXA com base parcial' };
+  return { concursos, fonte: completo ? 'resultados oficiais desde o concurso 1' : 'resultados oficiais (base parcial)' };
 }
 
 function analisarMega(concursos) {

@@ -1,0 +1,1019 @@
+/* =========================================================
+   Tema por loteria — cores inspiradas nas cores oficiais
+   Carregar DEPOIS de assets/css/style.css (e megasena.css).
+   Cada página define <body class="lotofacil|megasena|lotomania">
+   ========================================================= */
+
+:root {
+  /* Paleta oficial aproximada */
+  --c-lotofacil: #930089;
+  --c-lotofacil-dark: #6B0064;
+  --c-lotofacil-soft: #F8E7F6;
+
+  --c-megasena: #209869;
+  --c-megasena-dark: #14704C;
+  --c-megasena-soft: #E3F4EC;
+
+  --c-lotomania: #F78100;
+  --c-lotomania-dark: #C46500;
+  --c-lotomania-soft: #FFF0DF;
+
+  /* Reaponta as variáveis antigas do style.css para as cores oficiais */
+  --roxo: var(--c-lotofacil);
+  --roxo-dark: var(--c-lotofacil-dark);
+  --verde: var(--c-megasena);
+  --verde-dark: var(--c-megasena-dark);
+  --orange: var(--c-lotomania);
+  --orange-dark: var(--c-lotomania-dark);
+
+  /* Cor "da página" (padrão = Mega) */
+  --cor: var(--c-megasena);
+  --cor-dark: var(--c-megasena-dark);
+  --cor-soft: var(--c-megasena-soft);
+}
+
+body.lotofacil {
+  --cor: var(--c-lotofacil);
+  --cor-dark: var(--c-lotofacil-dark);
+  --cor-soft: var(--c-lotofacil-soft);
+}
+
+body.megasena {
+  --cor: var(--c-megasena);
+  --cor-dark: var(--c-megasena-dark);
+  --cor-soft: var(--c-megasena-soft);
+}
+
+body.lotomania {
+  --cor: var(--c-lotomania);
+  --cor-dark: var(--c-lotomania-dark);
+  --cor-soft: var(--c-lotomania-soft);
+}
+
+/* Fundo levemente tingido com a cor da loteria */
+body.lotofacil,
+body.megasena,
+body.lotomania {
+  background:
+    radial-gradient(circle at 0% 0%, var(--cor-soft) 0, transparent 420px),
+    radial-gradient(circle at 100% 100%, var(--cor-soft) 0, transparent 420px),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* ---------- Cabeçalho em faixa colorida ---------- */
+body.lotofacil header,
+body.megasena header,
+body.lotomania header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--cor) 0%, var(--cor-dark) 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 1.6rem 1.5rem 1.4rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 24px -12px var(--cor-dark);
+}
+
+body.lotofacil header h1,
+body.megasena header h1,
+body.lotomania header h1 {
+  color: #fff;
+  font-size: 30px;
+  position: relative;
+}
+
+body.lotofacil header p,
+body.megasena header p,
+body.lotomania header p {
+  color: rgba(255, 255, 255, .85);
+  position: relative;
+}
+
+/* Bolas decorativas no fundo do cabeçalho */
+body.lotofacil header::before,
+body.megasena header::before,
+body.lotomania header::before {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -40px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .10);
+  box-shadow: -190px 110px 0 -30px rgba(255, 255, 255, .07);
+}
+
+body.lotofacil header::after,
+body.megasena header::after,
+body.lotomania header::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  bottom: -26px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 10px solid rgba(255, 255, 255, .12);
+}
+
+/* Link "Início" no cabeçalho */
+.voltar-inicio {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  z-index: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, .9);
+  text-decoration: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .16);
+  transition: background .15s;
+}
+
+.voltar-inicio:hover {
+  background: rgba(255, 255, 255, .3);
+}
+
+/* ---------- Navegação entre loterias ---------- */
+/* Todos os links: contorno na cor de cada loteria */
+.modo-link.lotofacil-ativo,
+.modo-link.megasena-ativo,
+.modo-link.lotomania-ativo {
+  background: var(--card);
+  color: var(--text);
+  border-width: 1.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.modo-link.lotofacil-ativo { border-color: var(--c-lotofacil); }
+.modo-link.megasena-ativo  { border-color: var(--c-megasena); }
+.modo-link.lotomania-ativo { border-color: var(--c-lotomania); }
+
+.modo-link::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.modo-link.lotofacil-ativo::before { background: var(--c-lotofacil); }
+.modo-link.megasena-ativo::before  { background: var(--c-megasena); }
+.modo-link.lotomania-ativo::before { background: var(--c-lotomania); }
+
+.modo-link.lotofacil-ativo:hover { background: var(--c-lotofacil-soft); color: var(--c-lotofacil-dark); }
+.modo-link.megasena-ativo:hover  { background: var(--c-megasena-soft);  color: var(--c-megasena-dark); }
+.modo-link.lotomania-ativo:hover { background: var(--c-lotomania-soft); color: var(--c-lotomania-dark); }
+
+/* Só a loteria da página atual fica preenchida */
+body.lotofacil .modo-link.lotofacil-ativo,
+body.megasena .modo-link.megasena-ativo,
+body.lotomania .modo-link.lotomania-ativo {
+  background: var(--cor);
+  border-color: var(--cor-dark);
+  color: #fff;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+body.lotofacil .modo-link.lotofacil-ativo::before,
+body.megasena .modo-link.megasena-ativo::before,
+body.lotomania .modo-link.lotomania-ativo::before {
+  background: #fff;
+}
+
+/* ---------- Abas ---------- */
+.tab.ativo {
+  background: var(--cor);
+  color: #fff;
+}
+
+.tab:not(.ativo):hover {
+  background: var(--cor-soft);
+  color: var(--cor-dark);
+}
+
+/* ---------- Cards e rótulos ---------- */
+.card {
+  border: 1px solid rgba(44, 44, 42, .07);
+  border-radius: 18px;
+  padding: 1.4rem 1.5rem;
+  box-shadow:
+    0 1px 2px rgba(30, 20, 40, .04),
+    0 8px 24px -12px rgba(30, 20, 40, .12);
+}
+
+.sec-label {
+  color: var(--cor-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: .12em;
+}
+
+/* Pontinho colorido antes de cada título de seção */
+.sec-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor);
+  box-shadow: 0 0 0 3px var(--cor-soft);
+  flex-shrink: 0;
+}
+
+/* Quando o título está dentro de um cabeçalho com botão, não quebra o alinhamento */
+.jogos-header .sec-label {
+  margin-bottom: 0;
+}
+
+.stat {
+  background: var(--cor-soft);
+  border-color: transparent;
+}
+
+.stat .n {
+  color: var(--cor-dark);
+}
+
+/* Campo numérico (quantidade de jogos) com o mesmo visual dos selects */
+.inp-num {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  outline: none;
+}
+
+.inp-group label small {
+  color: var(--text2);
+  opacity: .75;
+  font-size: 10px;
+}
+
+/* Foco dos campos na cor da loteria */
+.inp-num:focus,
+select:focus,
+.fixas-qtd input:focus,
+.concurso-busca input:focus {
+  border-color: var(--cor);
+  box-shadow: 0 0 0 3px var(--cor-soft);
+}
+
+/* ---------- Volantes / dezenas ---------- */
+.dez:hover,
+.dez.impar:hover,
+.dez.par:hover {
+  border-color: var(--cor);
+  color: var(--cor-dark);
+}
+
+.dez.fixa,
+body.lotofacil .dez.fixa,
+body.megasena .dez.fixa,
+body.lotomania .dez.fixa {
+  background: var(--cor) !important;
+  border-color: var(--cor-dark) !important;
+  color: #fff !important;
+  box-shadow: 0 3px 8px -3px var(--cor-dark);
+}
+
+/* Bolinhas dos jogos: fixas na cor da loteria */
+.b-f,
+.b-mega-f {
+  background: var(--cor);
+  border-color: var(--cor-dark);
+  color: #fff;
+}
+
+.b-mega-l {
+  background: var(--c-megasena-soft);
+  color: var(--c-megasena-dark);
+}
+
+/* Botões principais */
+.btn-lotofacil,
+.btn-megasena,
+.btn-lotomania {
+  box-shadow: 0 4px 12px -6px var(--cor-dark);
+  font-weight: 600;
+}
+
+/* Botões neutros em ação ficam com a cor da loteria no hover */
+.btn:not(.btn-danger):not(.btn-lotofacil):not(.btn-megasena):not(.btn-lotomania):not(:disabled):hover {
+  border-color: var(--cor);
+  color: var(--cor-dark);
+  background: var(--cor-soft);
+}
+
+.btn-primary {
+  background: var(--cor);
+  border-color: var(--cor-dark);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--cor-dark) !important;
+  color: #fff !important;
+}
+
+/* Resultado da conferência acertado na cor da loteria */
+.dez-hit {
+  background: var(--cor) !important;
+  border-color: var(--cor-dark) !important;
+  color: #fff !important;
+}
+
+body.megasena .dez-sorteada {
+  background: var(--c-megasena) !important;
+  border-color: var(--c-megasena-dark) !important;
+}
+
+body.megasena .acerto-6 {
+  background: var(--c-megasena);
+}
+
+footer {
+  color: var(--cor-dark);
+  opacity: .75;
+}
+
+@media (max-width: 480px) {
+  .modo-links {
+    flex-wrap: wrap;
+  }
+
+  .modo-link {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
+  body.lotofacil header h1,
+  body.megasena header h1,
+  body.lotomania header h1 {
+    font-size: 24px;
+    margin-top: 10px;
+  }
+}
+
+/* ---------- Resumo da conferência ---------- */
+.conf-resumo {
+  border: 1.5px solid var(--cor);
+  background: var(--cor-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.conf-resumo.conf-vazio {
+  border-color: var(--border2);
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.conf-resumo.conf-vazio span {
+  display: block;
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+.conf-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.conf-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cor-dark);
+}
+
+.conf-sub {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 1px;
+}
+
+.conf-filtro {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.conf-filtro input {
+  accent-color: var(--cor);
+}
+
+.conf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.conf-chip {
+  font-size: 12px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.conf-chip b {
+  color: var(--cor-dark);
+  font-family: var(--mono);
+}
+
+.conf-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.conf-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 13px;
+  transition: background .15s;
+}
+
+.conf-item:hover {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--cor);
+}
+
+.conf-jogo {
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.conf-data {
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.conf-pts {
+  margin-left: auto;
+  font-weight: 600;
+  color: #fff;
+  background: var(--cor);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Linha do jogo premiado na lista */
+.hist-jogo-row.premiado {
+  background: var(--cor-soft);
+  box-shadow: inset 3px 0 0 var(--cor);
+  border-radius: 6px;
+}
+
+.hist-jogo-row.premiado .hist-jogo-num {
+  color: var(--cor-dark);
+  font-weight: 600;
+}
+
+.hist-jogo-row:target {
+  outline: 2px solid var(--cor);
+  outline-offset: 2px;
+  scroll-margin-top: 80px;
+}
+
+/* Filtro "Só premiados" */
+#histConteudo.so-premiados .hist-jogo-row:not(.premiado) {
+  display: none;
+}
+
+.hist-header {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-premiado {
+  background: var(--cor) !important;
+  color: #fff !important;
+  border-color: var(--cor-dark) !important;
+}
+
+@media (max-width: 480px) {
+  .conf-topo {
+    flex-direction: column;
+  }
+
+  .conf-item {
+    flex-wrap: wrap;
+  }
+}
+
+/* =========================================================
+   Acabamento visual
+   ========================================================= */
+
+/* ---------- Abas como controle segmentado ---------- */
+.tabs {
+  background: var(--card);
+  border: 1px solid rgba(44, 44, 42, .08);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(30, 20, 40, .04);
+}
+
+.tab {
+  border-radius: 10px;
+  background: transparent;
+  padding: 10px;
+}
+
+.tab.ativo {
+  box-shadow: 0 4px 10px -4px var(--cor-dark);
+}
+
+/* ---------- Navegação entre loterias mais leve ---------- */
+.modo-link {
+  border-radius: 12px;
+  padding: 10px;
+}
+
+/* ---------- Volante: dezenas como bolas de loteria ---------- */
+.dez,
+.dez.par,
+.dez.impar {
+  background: #fff;
+  border: 1.5px solid rgba(44, 44, 42, .14);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+}
+
+.dez:hover,
+.dez.par:hover,
+.dez.impar:hover {
+  background: var(--cor-soft);
+  border-color: var(--cor);
+  color: var(--cor-dark);
+  transform: translateY(-2px) scale(1.06);
+}
+
+.dez.fixa,
+body.lotofacil .dez.fixa,
+body.megasena .dez.fixa,
+body.lotomania .dez.fixa {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .45) 0, rgba(255, 255, 255, 0) 42%), var(--cor) !important;
+  border-color: var(--cor-dark) !important;
+  color: #fff !important;
+  font-weight: 600;
+  transform: scale(1.06);
+  box-shadow: 0 4px 10px -3px var(--cor-dark), inset 0 -3px 0 rgba(0, 0, 0, .12) !important;
+}
+
+.grid-dez {
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 14px;
+  justify-content: center;
+}
+
+/* ---------- Limite de fixas alinhado à esquerda com rótulo ---------- */
+.fixas-config {
+  justify-content: flex-start;
+  margin: 0 0 14px;
+}
+
+.fixas-qtd input,
+.concurso-busca input,
+select,
+.inp-num {
+  background: #fff;
+  border-radius: 10px;
+  border-color: rgba(44, 44, 42, .16);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* ---------- Contadores ---------- */
+.stat {
+  border-radius: 14px;
+  padding: .9rem .75rem;
+}
+
+.stat .n {
+  font-size: 24px;
+}
+
+.stat .l {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 10px;
+  font-family: var(--mono);
+}
+
+/* ---------- Botões ---------- */
+.btn {
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.btn-sm {
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.btn-lotofacil,
+.btn-megasena,
+.btn-lotomania {
+  background: linear-gradient(135deg, var(--cor) 0%, var(--cor-dark) 100%);
+  border-color: transparent;
+}
+
+.btn-lotofacil:hover,
+.btn-megasena:hover,
+.btn-lotomania:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn:disabled,
+.btn:disabled:hover {
+  filter: grayscale(.3);
+  transform: none;
+}
+
+/* ---------- Avisos ---------- */
+.aviso {
+  border-radius: 10px;
+  border-left-width: 4px;
+}
+
+.analise-status {
+  border-radius: 10px;
+}
+
+/* ---------- Painel de dicas / estatísticas ---------- */
+.odds-panel,
+.odds-mega-panel {
+  background: var(--cor-soft) !important;
+  border-color: transparent !important;
+  border-radius: 12px;
+}
+
+.odds-row strong {
+  color: var(--cor-dark);
+}
+
+.mini-stats div {
+  background: #fff;
+  border-radius: 12px;
+}
+
+.mini-stats strong {
+  color: var(--cor-dark);
+}
+
+.mini-label {
+  color: var(--cor-dark);
+}
+
+.rank-pill {
+  border-radius: 999px;
+  background: #fff;
+  border-color: var(--cor-soft);
+}
+
+.rank-pill strong {
+  color: var(--cor-dark);
+}
+
+.padrao-row {
+  border-radius: 10px;
+}
+
+/* ---------- Jogos gerados ---------- */
+.jogos-wrap {
+  gap: 8px;
+}
+
+.jogo-card {
+  background: #fff;
+  border: 1px solid rgba(44, 44, 42, .08);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.jogo-card:hover {
+  border-color: var(--cor);
+  box-shadow: 0 4px 12px -8px var(--cor-dark);
+}
+
+.jogo-n {
+  background: var(--cor-soft);
+  color: var(--cor-dark);
+  border-radius: 999px;
+  padding: 3px 9px;
+  min-width: 0;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Bolinhas: fixa = cheia na cor da loteria; livre = contorno */
+.b {
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .1);
+}
+
+.b-f,
+.b-mega-f {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .4) 0, rgba(255, 255, 255, 0) 45%), var(--cor);
+  color: #fff;
+}
+
+.b-l,
+.b-mega-l {
+  background: #fff;
+  color: var(--cor-dark);
+  border: 1.5px solid var(--cor);
+  box-shadow: none;
+}
+
+/* ---------- Histórico / conferência ---------- */
+.hist-resultado {
+  background: linear-gradient(135deg, var(--cor) 0%, var(--cor-dark) 100%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 24px -14px var(--cor-dark);
+}
+
+.hist-resultado-label {
+  color: rgba(255, 255, 255, .85);
+}
+
+.hist-resultado .dez-inline,
+.hist-resultado .dez-sorteada,
+body.megasena .hist-resultado .dez-sorteada {
+  background: #fff !important;
+  color: var(--cor-dark) !important;
+  border-color: #fff !important;
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .1);
+}
+
+.hist-item {
+  background: #fff;
+  border: 1px solid rgba(44, 44, 42, .08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.hist-badge {
+  background: var(--bg);
+  color: var(--text2);
+  border: 1px solid rgba(44, 44, 42, .08);
+}
+
+.hist-header .hist-badge:first-of-type {
+  margin-left: auto;
+}
+
+.hist-fixas:empty,
+.hist-fixas {
+  font-size: 11px;
+}
+
+.hist-jogos-lista {
+  gap: 4px;
+}
+
+.hist-jogo-row {
+  padding: 6px 8px;
+  border-radius: 10px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.hist-jogo-row:nth-child(even):not(.premiado) {
+  background: #FAF9F6;
+}
+
+.hist-jogo-num {
+  min-width: 58px;
+  white-space: nowrap;
+}
+
+.hist-dez-wrap {
+  gap: 3px;
+}
+
+/* Dezenas no histórico: acerto cheio na cor, erro discreto */
+.hist-item .dez-inline {
+  background: #fff;
+  color: #A8A6A0;
+  border: 1px solid rgba(44, 44, 42, .1);
+}
+
+.hist-item .dez-inline.dez-hit,
+.hist-item .dez-inline.dez-sorteada {
+  background: var(--cor) !important;
+  color: #fff !important;
+  border-color: var(--cor-dark) !important;
+}
+
+.acerto-badge {
+  font-size: 11px;
+  padding: 3px 9px;
+  min-width: 52px;
+  text-align: center;
+}
+
+.hist-jogo-row.premiado .acerto-badge {
+  background: var(--cor) !important;
+  color: #fff !important;
+}
+
+/* ---------- Modal ---------- */
+.modal-content {
+  border-radius: 18px !important;
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, .35);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.1rem 1rem;
+  }
+
+  .grid-dez {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .hist-jogo-row {
+    flex-wrap: wrap;
+  }
+}
+
+/* Ajustes finos */
+.jogos-header > div > .sec-label {
+  margin-bottom: 4px;
+}
+
+.jogos-header .mini-copy {
+  margin-top: 0;
+}
+
+.hist-header {
+  justify-content: flex-start;
+}
+
+.hist-header .hist-data {
+  margin-right: auto;
+}
+
+@media (max-width: 480px) {
+  /* Linha do jogo no histórico: "Jogo N" e pontos em cima, dezenas embaixo */
+  .hist-jogo-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    row-gap: 6px;
+  }
+
+  .hist-jogo-row .hist-dez-wrap {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .stat .n {
+    font-size: 18px;
+  }
+}
+
+/* ---------- Seletor "qual jogo salvo conferir" ---------- */
+.sel-conferencia {
+  margin-bottom: 14px;
+}
+
+.sel-pergunta {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.sel-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.sel-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid rgba(44, 44, 42, .12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+
+.sel-opcao:hover {
+  border-color: var(--cor);
+}
+
+.sel-opcao.marcada {
+  border-color: var(--cor);
+  background: var(--cor-soft);
+  box-shadow: 0 4px 12px -8px var(--cor-dark);
+}
+
+.sel-opcao input {
+  accent-color: var(--cor);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sel-titulo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.sel-titulo em {
+  font-style: normal;
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--cor-dark);
+}
+
+.sel-detalhe {
+  font-size: 12px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sel-premio {
+  background: var(--cor);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.sel-todos {
+  border-style: dashed;
+}
+
+.sel-todos.marcada {
+  border-style: solid;
+}
