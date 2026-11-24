@@ -4,216 +4,592 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lotofácil — Gerador de Desenvolvimento</title>
+  <title>Santos Loterias — Bem-vindo</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  
-  <!-- React, ReactDOM e Babel -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --c-lotofacil: #930089;
+      --c-lotofacil-dark: #6B0064;
+      --c-lotofacil-soft: #F8E7F6;
+      --c-megasena: #209869;
+      --c-megasena-dark: #14704C;
+      --c-megasena-soft: #E3F4EC;
+      --c-lotomania: #F78100;
+      --c-lotomania-dark: #C46500;
+      --c-lotomania-soft: #FFF0DF;
+      --azul-caixa: #005CA9;
+      --azul-caixa-dark: #003F75;
+
+      --bg: #F4F2EB;
+      --card: #FFFFFF;
+      --text: #2C2C2A;
+      --text2: #5F5E5A;
+      --border: rgba(44, 44, 42, 0.12);
+      --border2: rgba(44, 44, 42, 0.22);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ---------- HERO ---------- */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--azul-caixa) 0%, var(--azul-caixa-dark) 100%);
+      color: #fff;
+      padding: 3rem 1rem 6.5rem;
+      text-align: center;
+    }
+
+    .hero-faixa {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 8px;
+      background: linear-gradient(90deg,
+        var(--c-lotofacil) 0 33.33%,
+        var(--c-megasena) 33.33% 66.66%,
+        var(--c-lotomania) 66.66% 100%);
+    }
+
+    /* Bolas flutuando no fundo */
+    .bola-bg {
+      position: absolute;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 500;
+      color: rgba(255, 255, 255, .9);
+      box-shadow: inset -6px -8px 0 rgba(0, 0, 0, .15), inset 6px 6px 10px rgba(255, 255, 255, .25);
+      opacity: .9;
+      animation: flutuar 6s ease-in-out infinite;
+    }
+
+    .bola-bg.b1 { width: 70px; height: 70px; left: 6%;  top: 22%; background: var(--c-lotofacil); font-size: 20px; }
+    .bola-bg.b2 { width: 46px; height: 46px; left: 18%; top: 64%; background: var(--c-megasena);  font-size: 14px; animation-delay: -2s; }
+    .bola-bg.b3 { width: 58px; height: 58px; right: 8%; top: 18%; background: var(--c-lotomania); font-size: 17px; animation-delay: -4s; }
+    .bola-bg.b4 { width: 38px; height: 38px; right: 20%; top: 66%; background: var(--c-lotofacil); font-size: 12px; animation-delay: -1s; }
+    .bola-bg.b5 { width: 30px; height: 30px; left: 32%; top: 12%; background: var(--c-lotomania); font-size: 10px; animation-delay: -3s; opacity: .6; }
+    .bola-bg.b6 { width: 34px; height: 34px; right: 34%; top: 76%; background: var(--c-megasena); font-size: 11px; animation-delay: -5s; opacity: .6; }
+
+    @keyframes flutuar {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(8deg); }
+    }
+
+    .hero-conteudo { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; }
+
+    .trevo {
+      display: inline-flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .trevo span {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, .85);
+    }
+
+    .trevo span:nth-child(1) { background: var(--c-lotofacil); }
+    .trevo span:nth-child(2) { background: var(--c-megasena); }
+    .trevo span:nth-child(3) { background: var(--c-lotomania); }
+
+    .hero small {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .75);
+      margin-bottom: 8px;
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 7vw, 40px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: #FFD54A;
+    }
+
+    .hero p {
+      margin-top: 10px;
+      font-size: 15px;
+      color: rgba(255, 255, 255, .85);
+    }
+
+    /* ---------- CONTEÚDO ---------- */
+    .container {
+      max-width: 620px;
+      margin: -4.5rem auto 0;
+      padding: 0 1rem 2rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .sec-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 12px;
+    }
+
+    /* Cartões das loterias */
+    .loterias {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .loteria {
+      --cor: #999; --cor-dark: #666; --cor-soft: #eee;
+      position: relative;
+      overflow: hidden;
+      display: block;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(150deg, var(--cor) 0%, var(--cor-dark) 100%);
+      border-radius: var(--radius);
+      padding: 16px 14px 14px;
+      min-height: 150px;
+      box-shadow: 0 12px 24px -14px var(--cor-dark);
+      transition: transform .18s, box-shadow .18s, filter .18s;
+    }
+
+    .loteria::after {
+      content: "";
+      position: absolute;
+      right: -26px; top: -26px;
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .loteria:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 30px -14px var(--cor-dark);
+    }
+
+    .loteria.bloqueada {
+      opacity: .78;
+      cursor: not-allowed;
+    }
+
+    .loteria.bloqueada:hover { transform: none; }
+
+    .loteria.lotofacil { --cor: var(--c-lotofacil); --cor-dark: var(--c-lotofacil-dark); }
+    .loteria.megasena  { --cor: var(--c-megasena);  --cor-dark: var(--c-megasena-dark); }
+    .loteria.lotomania { --cor: var(--c-lotomania); --cor-dark: var(--c-lotomania-dark); }
+
+    .loteria .nome {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+      position: relative;
+    }
+
+    .loteria .detalhe {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255, 255, 255, .85);
+      margin-top: 3px;
+    }
+
+    .mini-bolas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 18px;
+    }
+
+    .mini-bolas span {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--cor-dark);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loteria .ir {
+      position: absolute;
+      right: 12px; bottom: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: .9;
+    }
+
+    /* Card branco genérico */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .steps { display: grid; gap: 14px; }
+
+    .step { display: flex; align-items: flex-start; gap: 12px; }
+
+    .step-num {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-body strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .step-body span { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+    /* Aviso */
+    .aviso-card {
+      background: #FFFBF0;
+      border: 1px solid #E8C96A;
+      border-left: 4px solid var(--c-lotomania);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 1rem;
+      min-height: 120px;
+    }
+
+    .aviso-titulo {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--c-lotomania-dark);
+      margin-bottom: 8px;
+    }
+
+    .aviso-texto { font-size: 13px; color: #6B4E0A; line-height: 1.6; }
+    .aviso-texto p + p { margin-top: 6px; }
+
+    .cursor {
+      display: inline-block;
+      color: var(--c-lotomania);
+      animation: piscar .7s step-end infinite;
+      margin-left: 1px;
+    }
+
+    @keyframes piscar { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .pular {
+      background: none;
+      border: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--c-lotomania-dark);
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Aceite */
+    .aceite {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--card);
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .aceite:hover { border-color: var(--azul-caixa); }
+
+    .aceite.destacar {
+      border-color: var(--c-lotomania);
+      box-shadow: 0 0 0 4px var(--c-lotomania-soft);
+      animation: tremer .4s;
+    }
+
+    @keyframes tremer {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .aceite input {
+      width: 18px; height: 18px;
+      margin-top: 1px;
+      accent-color: var(--azul-caixa);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .aceite input:disabled { cursor: wait; }
+
+    .aceite-texto { font-size: 13px; color: var(--text2); line-height: 1.5; user-select: none; }
+    .aceite-texto strong { color: var(--text); }
+
+    .btn-entrar {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--azul-caixa);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-entrar:hover:not(:disabled) {
+      background: var(--azul-caixa-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px -6px var(--azul-caixa-dark);
+    }
+
+    .btn-entrar:disabled {
+      background: #E3E1DA;
+      color: var(--text2);
+      cursor: not-allowed;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 1.5rem;
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 560px) {
+      .loterias { grid-template-columns: 1fr; }
+      .loteria { min-height: 0; }
+      .mini-bolas { margin-top: 12px; }
+      .bola-bg.b5, .bola-bg.b6 { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bola-bg, .cursor { animation: none; }
+    }
+  </style>
 </head>
 
-<body class="lotofacil">
-  <div class="page">
+<body>
 
-    <header>
-      <h1>Lotofácil</h1>
-      <p>Gerador de desenvolvimento — selecione as fixas e configure o jogo</p>
-    </header>
+  <section class="hero">
+    <div class="bola-bg b1">07</div>
+    <div class="bola-bg b2">23</div>
+    <div class="bola-bg b3">60</div>
+    <div class="bola-bg b4">15</div>
+    <div class="bola-bg b5">42</div>
+    <div class="bola-bg b6">09</div>
 
-    
-    <div class="modo-links">
-            <a class="modo-link lotofacil-ativo" href="index.html">Lotofácil</a>
-            <a class="modo-link megasena-ativo" href="megasena.html">Mega-Sena</a>
-            <a class="modo-link lotomania-ativo" href="lotomania.html">Lotomania</a>
-        </div>
-    <div class="tabs">
-      <button class="tab ativo" onclick="setTab('gerar', this)">Gerar jogos</button>
-      <button class="tab" onclick="setTab('historico', this)">Histórico</button>
+    <div class="hero-conteudo">
+      <div class="trevo"><span></span><span></span><span></span></div>
+      <small>Bem-vindo ao</small>
+      <h1>Santos <em>Loterias</em></h1>
+      <p>Gere, analise e confira seus jogos com estatística histórica.</p>
+    </div>
+    <div class="hero-faixa"></div>
+  </section>
+
+  <main class="container">
+
+    <!-- Loterias -->
+    <div class="loterias">
+      <a class="loteria lotofacil bloqueada" href="paginas/lotofacil.html" data-destino="paginas/lotofacil.html">
+        <span class="nome">Lotofácil</span>
+        <span class="detalhe">15 de 25 números</span>
+        <div class="mini-bolas"><span>02</span><span>05</span><span>11</span><span>18</span><span>24</span></div>
+        <span class="ir">Jogar →</span>
+      </a>
+      <a class="loteria megasena bloqueada" href="paginas/megasena.html" data-destino="paginas/megasena.html">
+        <span class="nome">Mega-Sena</span>
+        <span class="detalhe">6 de 60 números</span>
+        <div class="mini-bolas"><span>04</span><span>17</span><span>29</span><span>38</span><span>51</span><span>60</span></div>
+        <span class="ir">Jogar →</span>
+      </a>
+      <a class="loteria lotomania bloqueada" href="paginas/lotomania.html" data-destino="paginas/lotomania.html">
+        <span class="nome">Lotomania</span>
+        <span class="detalhe">50 de 100 números</span>
+        <div class="mini-bolas"><span>00</span><span>13</span><span>37</span><span>66</span><span>99</span></div>
+        <span class="ir">Jogar →</span>
+      </a>
     </div>
 
-    <!-- ABA GERAR -->
-    <div class="tab-content ativo" id="tab-gerar">
-
-      <div class="card">
-        <div class="sec-label">Dezenas fixas — clique para selecionar</div>
-        <div class="grid-dez" id="gridDez"></div>
-
-        <div class="fixas-config">
-          <div class="inp-group fixas-qtd">
-            <label for="qtdFixas">Quantidade de fixas</label>
-            <input type="number" id="qtdFixas" min="1" max="25" value="14" />
+    <!-- Como funciona -->
+    <div class="card">
+      <div class="sec-label">Como funciona</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num" style="background:var(--c-lotofacil)">1</div>
+          <div class="step-body">
+            <strong>Escolha a loteria e as dezenas fixas</strong>
+            <span>Selecione os números que devem aparecer em todos os jogos gerados.</span>
           </div>
         </div>
-
-        <div class="stats">
-          <div class="stat">
-            <div class="n" id="sFixas">0</div>
-            <div class="l">Fixas</div>
-          </div>
-          <div class="stat">
-            <div class="n" id="sLivres">0</div>
-            <div class="l">Livres</div>
-          </div>
-          <div class="stat">
-            <div class="n" id="sComb">—</div>
-            <div class="l">Combinações</div>
+        <div class="step">
+          <div class="step-num" style="background:var(--c-megasena)">2</div>
+          <div class="step-body">
+            <strong>Use a análise histórica</strong>
+            <span>Dados oficiais da Caixa mostram frequência, atraso e padrões das dezenas.</span>
           </div>
         </div>
-
-        <div class="row2">
-          <div class="inp-group">
-            <label>Dezenas por jogo</label>
-            <select id="selDezJogo">
-              <option value="15">15 dezenas</option>
-              <option value="16">16 dezenas</option>
-              <option value="17">17 dezenas</option>
-              <option value="18">18 dezenas</option>
-              <option value="19" selected>19 dezenas</option>
-              <option value="20">20 dezenas</option>
-            </select>
-          </div>
-          <div class="inp-group">
-            <label>Quantidade de jogos</label>
-            <select id="selJogos">
-              <option value="5">5 jogos</option>
-              <option value="10">10 jogos</option>
-              <option value="15" selected>15 jogos</option>
-              <option value="20">20 jogos</option>
-              <option value="30">30 jogos</option>
-              <option value="50">50 jogos</option>
-            </select>
+        <div class="step">
+          <div class="step-num" style="background:var(--c-lotomania)">3</div>
+          <div class="step-body">
+            <strong>Gere e confira os jogos</strong>
+            <span>Crie combinações diversificadas, salve no histórico e confira com o resultado oficial.</span>
           </div>
         </div>
-
-        <div class="aviso" id="aviso"></div>
-        <button class="btn btn-lotofacil" id="btnGerar">Gerar jogos</button>
-      </div>
-
-      <div class="card dicas-card">
-        <div class="jogos-header">
-          <div>
-            <div class="sec-label">Painel de dica online</div>
-            <p class="mini-copy">Dados historicos puxados da internet, com filtros para 13 e 14 pontos.</p>
-          </div>
-          <button class="btn btn-sm btn-lotofacil" id="btnAnalise" onclick="carregarAnalise()">Atualizar</button>
-        </div>
-
-        <div class="analise-status" id="analiseStatus">Carregando resultados online...</div>
-
-        <div class="odds-panel">
-          <div>
-            <div class="mini-label" id="oddsTitulo">Chance oficial</div>
-            <div class="odds-row">
-              <span>13 pontos: <strong id="odds13">-</strong></span>
-              <span>14 pontos: <strong id="odds14">-</strong></span>
-            </div>
-          </div>
-          <div class="mini-note">Fonte: API e tabela de probabilidade da CAIXA.</div>
-        </div>
-
-        <div class="mini-stats">
-          <div>
-            <strong id="dConcursos">-</strong>
-            <span>concursos</span>
-          </div>
-          <div>
-            <strong id="dUltimo">-</strong>
-            <span>ultimo</span>
-          </div>
-          <div>
-            <strong id="dRecorte">-</strong>
-            <span>recorte recente</span>
-          </div>
-        </div>
-
-        <div class="dica-section">
-          <div class="mini-label">Melhores dezenas combinadas</div>
-          <div class="rank-dezenas" id="melhoresDezenas"></div>
-        </div>
-
-        <div class="dica-grid">
-          <div>
-            <div class="mini-label">Quentes recentes</div>
-            <div class="rank-dezenas compact" id="quentesRecentes"></div>
-          </div>
-          <div>
-            <div class="mini-label">Mais atrasadas</div>
-            <div class="rank-dezenas compact" id="atrasadasDezenas"></div>
-          </div>
-        </div>
-
-        <div class="dica-section">
-          <div class="mini-label">Padroes que mais aparecem</div>
-          <div class="padroes-lista" id="listaPadroes"></div>
-        </div>
-
-        <div class="dica-section">
-          <div class="mini-label">Dicas para filtrar 13/14</div>
-          <div class="dicas-texto" id="dicasTexto"></div>
-        </div>
-
-        <button class="btn btn-lotofacil" id="btnAplicarDicas" onclick="aplicarDicas()" disabled>Aplicar dica nas fixas e mistura</button>
-      </div>
-
-      <div class="card" id="secJogos" style="display:none">
-        <div class="jogos-header">
-          <div class="sec-label" id="lblJogos">Jogos gerados</div>
-          <button class="btn btn-sm btn-danger" onclick="limparJogos()">Limpar</button>
-        </div>
-        <div class="jogos-wrap" id="jogosWrap"></div>
-        <div class="acoes">
-          <button class="btn btn-lotofacil" id="btnCopiar" onclick="copiarJogos()">Copiar jogos</button>
-          <button class="btn btn-lotofacil" id="btnSalvar" onclick="salvarHistorico()">Salvar no histórico</button>
-        </div>
-      </div>
-
-    </div>
-
-
-
-    <div class="tab-content" id="tab-historico">
-      <div class="card">
-        <div class="jogos-header">
-          <div class="sec-label">Conferência de concurso</div>
-        </div>
-        <div class="concurso-busca">
-          <input type="number" id="inputConcurso" placeholder="Nº do concurso (ex: 3200)" min="1" />
-          <button class="btn btn-sm" onclick="buscarConcursoManual()">Buscar</button>
-          <button class="btn btn-sm" onclick="buscarUltimo()">Último</button>
-        </div>
-        <div id="concursoStatus" class="analise-status" style="display:none"></div>
-      </div>
-      <div class="card">
-        <div class="jogos-header">
-          <div class="sec-label">Histórico de jogos</div>
-          <button class="btn btn-sm btn-danger" onclick="limparHistorico()">Limpar tudo</button>
-        </div>
-        <div id="histConteudo"></div>
       </div>
     </div>
 
-  </div>
-
-  <!-- MODAL DE PERGUNTA DOWNLOAD -->
-  <div id="modalDownload" class="modal">
-    <div class="modal-content">
-      <h3>Deseja baixar os jogos?</h3>
-      <p>Os jogos serão salvos em um arquivo .txt</p>
-      <div class="modal-buttons">
-        <button class="btn btn-primary" onclick="confirmarDownload()">Sim, baixar</button>
-        <button class="btn btn-secondary" onclick="fecharModal()">Não, obrigado</button>
-      </div>
+    <!-- Aviso -->
+    <div class="aviso-card">
+      <div class="aviso-titulo">⚠️ Aviso importante</div>
+      <div class="aviso-texto" id="avisoTexto"></div>
+      <button class="pular" id="btnPular" type="button">Mostrar texto completo</button>
     </div>
-  </div>
 
-  <footer>lotofacil gerador © 2026</footer>
-<script src="script.js"></script>
-  
+    <!-- Aceite -->
+    <label class="aceite" id="boxAceite">
+      <input type="checkbox" id="chkAceite" disabled>
+      <span class="aceite-texto">
+        <strong>Li e entendi o aviso acima.</strong> Estou ciente de que esta ferramenta não garante resultados e que
+        jogo por conta e risco próprio.
+      </span>
+    </label>
+
+    <button class="btn-entrar" id="btnEntrar" disabled>Acessar o sistema</button>
+
+    <footer>santos loterias © 2026 — uso pessoal · jogue com responsabilidade · +18</footer>
+  </main>
+
+  <script>
+    const chk = document.getElementById('chkAceite');
+    const btn = document.getElementById('btnEntrar');
+    const boxAceite = document.getElementById('boxAceite');
+    const cards = document.querySelectorAll('.loteria');
+
+    function aceitou() {
+      try { return sessionStorage.getItem('aceite_termos') === '1'; } catch (e) { return false; }
+    }
+
+    function atualizarEstado() {
+      btn.disabled = !chk.checked;
+      cards.forEach(c => c.classList.toggle('bloqueada', !chk.checked));
+    }
+
+    function registrarAceite() {
+      try { sessionStorage.setItem('aceite_termos', '1'); } catch (e) {}
+    }
+
+    chk.addEventListener('change', atualizarEstado);
+
+    btn.addEventListener('click', () => {
+      registrarAceite();
+      window.location.href = 'paginas/lotofacil.html';
+    });
+
+    cards.forEach(card => {
+      card.addEventListener('click', (ev) => {
+        if (!chk.checked) {
+          ev.preventDefault();
+          boxAceite.classList.remove('destacar');
+          void boxAceite.offsetWidth; // reinicia a animação
+          boxAceite.classList.add('destacar');
+          boxAceite.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        registrarAceite();
+      });
+    });
+
+    // ---------- Aviso com efeito de digitação ----------
+    const frases = [
+      "Esta ferramenta é de uso exclusivamente estatístico e educacional. Os jogos gerados são baseados em análise de frequência histórica e não garantem, de forma alguma, qualquer resultado nos sorteios.",
+      "Loterias são jogos de azar. Cada sorteio é um evento independente e os resultados anteriores não influenciam os próximos. Jogue com responsabilidade e nunca aposte mais do que pode perder.",
+      "O desenvolvedor desta ferramenta não se responsabiliza por perdas financeiras, decisões de jogo ou qualquer dano decorrente do uso deste sistema."
+    ];
+
+    const el = document.getElementById('avisoTexto');
+    const btnPular = document.getElementById('btnPular');
+    let fraseIdx = 0, charIdx = 0, textoAtual = '', timer = null;
+
+    function render(comCursor) {
+      const paragrafos = textoAtual.split('\n\n').filter(p => p.trim());
+      el.innerHTML = paragrafos.map((p, i) =>
+        `<p>${p}${comCursor && i === paragrafos.length - 1 ? '<span class="cursor">|</span>' : ''}</p>`
+      ).join('');
+    }
+
+    function concluir() {
+      clearTimeout(timer);
+      textoAtual = frases.join('\n\n');
+      render(false);
+      chk.disabled = false;
+      btnPular.style.display = 'none';
+    }
+
+    function digitar() {
+      if (fraseIdx >= frases.length) return concluir();
+      const frase = frases[fraseIdx];
+      if (charIdx < frase.length) {
+        textoAtual += frase[charIdx++];
+        render(true);
+        timer = setTimeout(digitar, 14);
+      } else {
+        fraseIdx++;
+        charIdx = 0;
+        textoAtual += '\n\n';
+        timer = setTimeout(digitar, 250);
+      }
+    }
+
+    btnPular.addEventListener('click', concluir);
+
+    // Quem já aceitou nesta sessão não precisa ver a animação de novo
+    if (aceitou()) {
+      concluir();
+      chk.checked = true;
+      atualizarEstado();
+    } else {
+      digitar();
+    }
+  </script>
+
 </body>
 
 </html>

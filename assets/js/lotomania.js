@@ -33,26 +33,77 @@ function distancia(a, b) {
     return d;
 }
 
+// Embaralhamento uniforme (Fisher-Yates). Retorna uma cópia.
+function embaralhar(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+// Escolhe até n combinações bem diferentes entre si (greedy max-min),
+// guardando a menor distância de cada candidato: O(candidatos × n).
 function selecionarDiversos(todos, n) {
     if (n >= todos.length) return todos.slice();
-    const pool = [...todos];
-    const inicio = pool[Math.floor(Math.random() * pool.length)];
-    const sel = [inicio];
-    pool.splice(pool.indexOf(inicio), 1);
-    while (sel.length < n && pool.length) {
-        const melhor = pool.reduce((best, x) => {
-            const d = Math.min(...sel.map(s => distancia(x, s)));
-            const db = Math.min(...sel.map(s => distancia(best, s)));
-            return d > db ? x : best;
-        }, pool[0]);
-        sel.push(melhor);
-        pool.splice(pool.indexOf(melhor), 1);
+    const minDist = new Array(todos.length).fill(Infinity);
+    const usado = new Array(todos.length).fill(false);
+    const sel = [];
+    let idx = Math.floor(Math.random() * todos.length);
+    while (sel.length < n && idx >= 0) {
+        usado[idx] = true;
+        sel.push(todos[idx]);
+        const escolhido = new Set(todos[idx]);
+        let melhor = -1, melhorDist = -1;
+        for (let i = 0; i < todos.length; i++) {
+            if (usado[i]) continue;
+            let iguais = 0;
+            for (const x of todos[i]) if (escolhido.has(x)) iguais++;
+            const d = (todos[i].length - iguais) * 2;
+            if (d < minDist[i]) minDist[i] = d;
+            if (minDist[i] > melhorDist) { melhorDist = minDist[i]; melhor = i; }
+        }
+        idx = melhor;
     }
     return sel;
 }
 
+// Gera n combinações de k dezenas, diversas entre si, sem enumerar
+// milhões de combinações (amostra aleatória quando o total é grande).
+function gerarLivresDiversos(pool, k, n) {
+    const total = comb(pool.length, k);
+    if (total === 0) return [];
+    let candidatos;
+    if (total <= 3000) {
+        candidatos = combinations(pool, k);
+    } else {
+        const alvo = Math.min(total, Math.max(n * 40, 1500));
+        const vistos = new Set();
+        candidatos = [];
+        for (let t = 0; candidatos.length < alvo && t < alvo * 20; t++) {
+            const c = embaralhar(pool).slice(0, k).sort((a, b) => a - b);
+            const chave = c.join(',');
+            if (!vistos.has(chave)) { vistos.add(chave); candidatos.push(c); }
+        }
+    }
+    return selecionarDiversos(candidatos, Math.min(n, candidatos.length));
+}
+
+// Escapa texto vindo de fontes externas antes de usar em innerHTML.
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function sinalTimeout(ms) {
+    return (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ms) : undefined;
+}
+
 const fixasSel = new Set();
 let jogosGerados = [];
+// fixas usadas na última geração (não as atuais da tela)
+let fixasGeradas = [];
+let jogosJaSalvos = false;
 
 function getQtdFixasDesejada() {
     const el = document.getElementById('qtdFixas');
@@ -111,14 +162,17 @@ for (let i = NUM_MIN; i <= NUM_MAX; i++) {
     grid.appendChild(b);
 }
 
+// Formata números grandes de forma legível (pt-BR).
 function fmtComb(n) {
-    if (!n || !isFinite(n) || isNaN(n)) return '-';
-    if (n >= 1e15) return '∞';
-    if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
-    return String(n);
+    if (!n || !Number.isFinite(n)) return '-';
+    const um = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+    if (n >= 1e18) return n.toExponential(1).replace('.', ',').replace('e+', ' × 10^');
+    if (n >= 1e15) return um(n / 1e15) + ' quatri';
+    if (n >= 1e12) return um(n / 1e12) + ' tri';
+    if (n >= 1e9) return um(n / 1e9) + ' bi';
+    if (n >= 1e6) return um(n / 1e6) + ' mi';
+    if (n >= 1e4) return um(n / 1e3) + ' mil';
+    return n.toLocaleString('pt-BR');
 }
 
 function atualizar() {
@@ -127,13 +181,11 @@ function atualizar() {
     const livresPool = getLivres();
     const livrosPorJogo = dezJogo - fixasSel.size;
     const nComb = livrosPorJogo >= 0 && livrosPorJogo <= livresPool.length ? comb(livresPool.length, livrosPorJogo) : 0;
-    const LIMITE_DISPLAY = 1e15;
-
     document.getElementById('sFixas').textContent = String(fixasSel.size);
     document.getElementById('sLivres').textContent = String(livresPool.length);
-    document.getElementById('sComb').textContent = nComb > LIMITE_DISPLAY ? '∞' : fmtComb(nComb);
+    document.getElementById('sComb').textContent = fmtComb(nComb);
     const btnGerar = document.getElementById('btnGerar');
-    if (btnGerar) btnGerar.disabled = fixasSel.size === 0;
+    if (btnGerar) btnGerar.disabled = fixasSel.size === 0 || fixasSel.size > qtdFixas || livrosPorJogo < 0 || nComb === 0;
 
     const aviso = document.getElementById('aviso');
     if (fixasSel.size === 0) {
@@ -210,7 +262,7 @@ function distribuirGruposAuto(fixos) {
     for (let i = NUM_MIN; i <= NUM_MAX; i++) {
         if (!fixos.has(i)) livres.push(i);
     }
-    const shuffled = [...livres].sort(() => Math.random() - 0.5);
+    const shuffled = embaralhar(livres);
     const grupos = [];
     for (let g = 0; g < QTD_GRUPOS; g++) {
         grupos.push(shuffled.slice(g * QTD_VAR_GRUPO, (g + 1) * QTD_VAR_GRUPO).sort((a, b) => a - b));
@@ -218,7 +270,13 @@ function distribuirGruposAuto(fixos) {
     return grupos;
 }
 
+// Fixos escolhidos no painel da metodologia (score combinado / quentes / atrasadas)
+let fixosMetodEscolhidos = null;
+
 function obterFixosMetod() {
+    if (fixosMetodEscolhidos && fixosMetodEscolhidos.size === QTD_FIXOS_METOD) {
+        return fixosMetodEscolhidos;
+    }
     if (window.dicaAplicavel && window.dicaAplicavel.top && window.dicaAplicavel.top.length >= QTD_FIXOS_METOD) {
         return new Set(window.dicaAplicavel.top.slice(0, QTD_FIXOS_METOD));
     }
@@ -248,6 +306,19 @@ function lerGrupos() {
     return null;
 }
 
+function gruposValidos(grupos, fixos) {
+    if (!Array.isArray(grupos) || grupos.length !== QTD_GRUPOS) return false;
+    const vistos = new Set(fixos);
+    for (const g of grupos) {
+        if (!Array.isArray(g) || g.length !== QTD_VAR_GRUPO) return false;
+        for (const n of g) {
+            if (!Number.isInteger(n) || n < NUM_MIN || n > NUM_MAX || vistos.has(n)) return false;
+            vistos.add(n);
+        }
+    }
+    return true;
+}
+
 function renderSecaoGrupos() {
     const sec = document.getElementById('secMetodologia');
     if (!sec) return;
@@ -265,9 +336,13 @@ function renderSecaoGrupos() {
 
     if (!gruposMetod.length) {
         const saved = lerGrupos();
-        gruposMetod = saved || distribuirGruposAuto(fixos);
+        // Grupos salvos podem ser de uma análise antiga: só reaproveita se
+        // ainda forem válidos para os fixos atuais (sem dezena repetida).
+        gruposMetod = gruposValidos(saved, fixos) ? saved : distribuirGruposAuto(fixos);
+        salvarGrupos(gruposMetod);
     }
 
+    renderPainelFixas();
     renderFixosMetod(fixos);
     renderGruposMetod();
 }
@@ -328,6 +403,8 @@ function aplicarFixosMetodologia(tipo) {
         dezenas = window.dicaAplicavel.top.slice(0, 29);
     }
 
+    fixosMetodEscolhidos = new Set(dezenas);
+
     // Aplica no fixasSel global também para manter sincronia
     fixasSel.clear();
     dezenas.forEach(n => fixasSel.add(n));
@@ -385,7 +462,7 @@ function redistribuirGrupo(gi) {
         mostrarAviso(`Não há dezenas livres suficientes para redistribuir o grupo ${gi + 1}.`);
         return;
     }
-    gruposMetod[gi] = livres.sort(() => Math.random() - 0.5).slice(0, QTD_VAR_GRUPO).sort((a, b) => a - b);
+    gruposMetod[gi] = embaralhar(livres).slice(0, QTD_VAR_GRUPO).sort((a, b) => a - b);
     salvarGrupos(gruposMetod);
     renderGruposMetod();
 }
@@ -777,41 +854,21 @@ function normalizarConcursoApiLotomania(valor, fallbackNumero = 0) {
 }
 
 async function buscarConcurso(numero) {
-    try {
-        const res = await fetch('concursos-lotomania.json');
-        if (!res.ok) throw new Error('no-file');
-        const data = await res.json();
-        const concursos = Array.isArray(data) ? data.map((c, i) => normalizarConcursoApiLotomania(c, i + 1)) : [];
-        if (!concursos.length) return null;
-        if (numero) {
-            const found = concursos.find(c => c.numero === Number(numero));
-            return found || null;
-        }
-        return concursos[concursos.length - 1];
-    } catch (e) {
-        try { return await buscarConcursoCaixa(numero); } catch { return null; }
+    // Concurso específico: primeiro procura no cache local (instantâneo).
+    if (numero) {
+        const c = lerCacheHistorico().find(x => x.numero === numero);
+        if (c) return { numero: c.numero, data: c.data, dezenas: c.dezenas, lista: c.dezenas };
     }
+    try { return await buscarConcursoCaixa(numero); } catch { return null; }
 }
 
 async function buscarConcursoCaixa(numero) {
-    const base = numero ? `${CAIXA_LOTOMANIA_API}/${numero}` : CAIXA_LOTOMANIA_API;
-    const urls = CORS_PROXY_BUILDERS.map(b => b(base));
-    for (const url of urls) {
-        try {
-            try { setStatusAnalise(`Tentando: ${url}`); } catch {}
-            const r = await fetch(url, { signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(8000) : undefined });
-            if (!r.ok) continue;
-            const data = await r.json();
-            const norm = normalizarConcursoApiLotomania(data);
-            if (norm.dezenas && norm.dezenas.length >= 1) {
-                setStatusAnalise('Concurso obtido via CAIXA.');
-                return { numero: norm.numero, data: norm.data, dezenas: norm.dezenas, lista: norm.dezenas };
-            }
-        } catch (err) {
-            console.warn('buscarConcursoCaixa erro em', url, err);
-        }
+    const data = numero ? await ApiLoterias.concurso('lotomania', numero) : await ApiLoterias.ultimo('lotomania');
+    const norm = normalizarConcursoApiLotomania(data, numero || 0);
+    if (norm.dezenas.length === 20 && norm.numero) {
+        return { numero: norm.numero, data: norm.data, dezenas: norm.dezenas, lista: norm.dezenas };
     }
-    throw new Error('Concurso CAIXA não disponível');
+    throw new Error('Concurso não disponível');
 }
 
 function setStatusAnalise(texto) {
@@ -829,7 +886,7 @@ async function fetchJson(url) {
         tentativas.push(finalUrl);
         try { setStatusAnalise(`Tentando ${new URL(finalUrl).host}...`); } catch {}
         try {
-            const resp = await fetch(finalUrl, { cache: 'no-store' });
+            const resp = await fetch(finalUrl, { cache: 'no-store', signal: sinalTimeout(10000) });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const texto = await resp.text();
             try { return JSON.parse(texto); } catch (e) { throw new Error('invalid-json:' + e.message); }
@@ -869,13 +926,15 @@ function mesclarConcursos(listas) {
 }
 
 async function buscarUltimoCaixa() {
-    const data = await fetchJson(CAIXA_LOTOMANIA_API);
-    const concursos = normalizarConcursos(data);
-    if (!concursos.length) throw new Error('ultimo concurso da CAIXA sem dezenas');
-    return concursos[0];
+    return buscarConcursoCaixa(null);
 }
 
 async function buscarSeedHistorico() {
+    // Fonte rápida: todos os concursos em uma única requisição.
+    setStatusAnalise('Baixando todos os concursos de uma vez...');
+    const todos = normalizarConcursos(await ApiLoterias.todos('lotomania'));
+    if (todos.length >= 100) return todos;
+
     for (const fonte of LOTOMANIA_SEEDS) {
         try {
             setStatusAnalise(`Carregando base histórica auxiliar: ${fonte.nome}...`);
@@ -893,7 +952,7 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
     const faltantes = [];
     for (let n = 1; n <= numeroUltimo; n++) if (!mapa.has(n)) faltantes.push(n);
     if (!faltantes.length) return [];
-    const concorrencia = 4; const pausaLote = 250; const falhas = []; let baixados = 0;
+    const concorrencia = ApiLoterias.paralelo; const pausaLote = 50; const falhas = []; let baixados = 0;
     for (let i = 0; i < faltantes.length; i += concorrencia) {
         const lote = faltantes.slice(i, i + concorrencia);
         const resultados = await Promise.all(lote.map(async (numero) => {
@@ -902,7 +961,7 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
         resultados.filter(Boolean).forEach((concurso) => mapa.set(concurso.numero, concurso));
         baixados += lote.length;
         if (baixados === faltantes.length || baixados % (concorrencia * 4) === 0) {
-            setStatusAnalise(`Baixando concursos da CAIXA: ${baixados}/${faltantes.length} faltantes...`);
+            setStatusAnalise(`Baixando concursos: ${baixados}/${faltantes.length} faltantes...`);
         }
         if (i + concorrencia < faltantes.length) await sleep(pausaLote);
     }
@@ -920,18 +979,25 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
 }
 
 async function carregarHistoricoOnline() {
-    setStatusAnalise('Consultando último concurso oficial da CAIXA...');
-    const ultimo = await buscarUltimoCaixa();
-    const numeroUltimo = ultimo.numero;
+    setStatusAnalise('Consultando último concurso...');
     const cache = lerCacheHistorico();
+    let ultimo;
+    try {
+        ultimo = await buscarUltimoCaixa();
+    } catch (e) {
+        // Fontes fora do ar: usa o que já está salvo no navegador.
+        if (cache.length >= 100) return { concursos: cache, fonte: { nome: 'cache local — fontes indisponíveis, pode estar desatualizado' }, faltantes: 0 };
+        throw e;
+    }
+    const numeroUltimo = ultimo.numero;
     const cacheCompleto = cache.length >= numeroUltimo && cache[cache.length - 1].numero >= numeroUltimo;
     if (cacheCompleto) return { concursos: cache, fonte: { nome: 'cache local + CAIXA' }, faltantes: 0 };
-    const seed = cache.length ? [] : await buscarSeedHistorico();
+    const seed = numeroUltimo - cache.length > 20 ? await buscarSeedHistorico() : [];
     const mapa = mesclarConcursos([seed, cache, [ultimo]]);
     const falhas = await completarHistoricoCaixa(mapa, numeroUltimo);
     const concursos = Array.from(mapa.values()).sort((a, b) => a.numero - b.numero);
     salvarCacheHistorico(concursos);
-    return { concursos, fonte: { nome: 'API oficial da CAIXA' }, faltantes: falhas.length };
+    return { concursos, fonte: { nome: 'resultados oficiais da CAIXA' }, faltantes: falhas.length };
 }
 
 function normalizarConcursos(data) {
@@ -1038,7 +1104,13 @@ function preencherResumoAnalise(concursos, analise, fonte, detalhes = {}) {
     const top = analise.melhores.map(item => item.n);
     const dataUltimo = ultimo.data ? ` (${ultimo.data})` : '';
     const avisoFaltantes = detalhes.faltantes ? ` Faltaram ${detalhes.faltantes} concursos na carga.` : '';
-    window.dicaAplicavel = { top };
+    window.dicaAplicavel = {
+        top,
+        quentes: analise.quentes.map(item => item.n),
+        atrasadas: analise.atrasadas.map(item => item.n)
+    };
+    fixosMetodEscolhidos = null;
+    gruposMetod = [];
     const dConc = document.getElementById('dConcursos'); if (dConc) dConc.textContent = analise.total.toLocaleString('pt-BR');
     const dUlt = document.getElementById('dUltimo'); if (dUlt) dUlt.textContent = ultimo.numero.toLocaleString('pt-BR');
     const dRec = document.getElementById('dRecorte'); if (dRec) dRec.textContent = analise.recorte.toLocaleString('pt-BR');
@@ -1083,15 +1155,16 @@ async function buscarConcursoManual() {
     }
 }
 
-function renderJogoComAcertos(jogo, idx, resultado) {
+function renderJogoComAcertos(jogo, idx, resultado, entradaIdx = 0) {
     const acertos = jogo.filter(n => resultado.dezenas.has(n));
     const pts = acertos.length;
+    const linha = attrsJogoConferido(pts, entradaIdx, idx);
     const dezenas = jogo.map(n => {
         const hit = resultado.dezenas.has(n);
         return `<span class="dez-inline${hit ? ' dez-sorteada' : ''}">${fmt(n)}</span>`;
     }).join('');
     return `
-    <div class="hist-jogo-row">
+    <div class="hist-jogo-row${linha.classe}" id="${linha.id}">
       <span class="hist-jogo-num">Jogo ${idx + 1}</span>
       <div class="hist-dez-wrap">${dezenas}</div>
       <span class="acerto-badge">${pts} pts</span>
@@ -1124,36 +1197,39 @@ function aplicarDicas() {
     atualizar();
     mostrarAviso(`Dica aplicada: ${fixasSel.size} melhores dezenas marcadas como fixas.`);
     // atualiza metodologia depois de aplicar dica
+    fixosMetodEscolhidos = null;
     gruposMetod = [];
     renderPainelFixas();
     renderSecaoGrupos();
 }
 
-document.getElementById('selJogos').addEventListener('change', atualizar);
+/** Quantidade de jogos digitada (1 a QTD_JOGOS_MAX). Vazio/inválido usa o padrão. */
+const QTD_JOGOS_MAX = 200;
+function getQtdJogos() {
+    const el = /** @type {HTMLInputElement} */ (document.getElementById('selJogos'));
+    const v = parseInt(el.value, 10);
+    return Number.isFinite(v) ? Math.max(1, Math.min(QTD_JOGOS_MAX, v)) : 10;
+}
+// Ao sair do campo, mostra o valor que realmente será usado.
+document.getElementById('selJogos').addEventListener('change', (e) => {
+    /** @type {HTMLInputElement} */ (e.target).value = String(getQtdJogos());
+});
+document.getElementById('selJogos').addEventListener('input', atualizar);
 document.getElementById('qtdFixas').addEventListener('input', atualizar);
 
 document.getElementById('btnGerar').addEventListener('click', () => {
     const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-    const nJogos = parseInt(document.getElementById('selJogos').value, 10);
+    const nJogos = getQtdJogos();
     const qtdFixas = getQtdFixasDesejada();
     const livresPool = getLivres().sort((a, b) => a - b);
     const livrosPorJogo = DEZ_JOGO_PADRAO - fixas.length;
     if (fixas.length === 0 || fixas.length > qtdFixas || livrosPorJogo < 0) return;
     const combTotal = comb(livresPool.length, livrosPorJogo);
     if (combTotal === 0) return;
-    let livresSelecionados;
-    if (combTotal > 200000) {
-        const set = new Set();
-        while (set.size < Math.min(nJogos, combTotal)) {
-            const shuffled = [...livresPool].sort(() => Math.random() - 0.5).slice(0, livrosPorJogo).sort((a, b) => a - b);
-            set.add(shuffled.join(','));
-        }
-        livresSelecionados = Array.from(set).map(s => s.split(',').map(Number));
-    } else {
-        const todos = combinations(livresPool, livrosPorJogo);
-        livresSelecionados = selecionarDiversos(todos, Math.min(nJogos, todos.length));
-    }
+    const livresSelecionados = gerarLivresDiversos(livresPool, livrosPorJogo, nJogos);
     jogosGerados = livresSelecionados.map(livres => [...fixas, ...livres].sort((a, b) => a - b));
+    fixasGeradas = fixas;
+    jogosJaSalvos = false;
     renderJogos(jogosGerados, fixas);
     document.getElementById('lblJogos').textContent = `${jogosGerados.length} jogos gerados - OK, sem repetição`;
     document.getElementById('secJogos').style.display = 'block';
@@ -1172,8 +1248,10 @@ async function gerarZeroAcertos() {
     const sorteadas = window.ultimoResultado.dezenas;
     const naoSorteadas = Array.from({ length: TOTAL_DEZ }, (_, i) => i + NUM_MIN).filter(n => !sorteadas.has(n));
     if (naoSorteadas.length < DEZ_JOGO_PADRAO) { mostrarAviso('Não há números suficientes para gerar zero acertos.'); return; }
-    const shuffle = [...naoSorteadas].sort(() => Math.random() - 0.5).slice(0, DEZ_JOGO_PADRAO).sort((a, b) => a - b);
+    const shuffle = embaralhar(naoSorteadas).slice(0, DEZ_JOGO_PADRAO).sort((a, b) => a - b);
     jogosGerados = [shuffle];
+    fixasGeradas = [];
+    jogosJaSalvos = false;
     renderJogos(jogosGerados, []);
     document.getElementById('lblJogos').textContent = '1 jogo zero acertos gerado';
     document.getElementById('secJogos').style.display = 'block';
@@ -1202,7 +1280,7 @@ function limparJogos() {
 }
 
 function copiarJogos() {
-    const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+    const fixas = fixasGeradas;
     let txt = `LOTOMANIA - ${jogosGerados.length} jogos\n`;
     txt += `Fixas: ${fixas.map(fmt).join(' - ')}\n\n`;
     jogosGerados.forEach((j, i) => { txt += `Jogo ${i + 1}: ${j.map(fmt).join(' - ')}\n`; });
@@ -1221,12 +1299,17 @@ function setHistorico(h) { localStorage.setItem(HISTORICO_KEY, JSON.stringify(h)
 
 function salvarHistorico() {
     if (!jogosGerados.length) return;
-    const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-    const h = getHistorico();
-    h.unshift({ data: new Date().toLocaleString('pt-BR'), fixas, dezenas_por_jogo: DEZ_JOGO_PADRAO, jogos: jogosGerados });
-    setHistorico(h);
-    renderHistorico();
     const btn = document.getElementById('btnSalvar');
+    if (jogosJaSalvos) {
+        btn.textContent = 'Já está no histórico';
+        setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
+        return;
+    }
+    const h = getHistorico();
+    h.unshift({ data: new Date().toLocaleString('pt-BR'), fixas: fixasGeradas, dezenas_por_jogo: DEZ_JOGO_PADRAO, jogos: jogosGerados });
+    setHistorico(h);
+    jogosJaSalvos = true;
+    renderHistorico();
     btn.textContent = 'Salvo!';
     setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
 }
@@ -1245,20 +1328,22 @@ function renderHistorico() {
     const res = window.ultimoResultado || null;
     const resultadoHTML = res
         ? `<div class="hist-resultado">
-        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + res.data : ''}</span>
+        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + esc(res.data) : ''}</span>
         <div class="hist-resultado-dez">${res.lista.map(n => `<span class="dez-inline dez-sorteada">${fmt(n)}</span>`).join('')}</div>
        </div>`
         : '';
-    el.innerHTML = resultadoHTML + h.map((entrada) => `
+    const idxs = indicesParaConferir(h);
+  el.innerHTML = renderSeletorConferencia(h, res) + resultadoHTML + (res ? renderResumoConferencia(h, res, idxs) : '') + h.map((entrada, ei) => !idxs.includes(ei) ? '' : `
     <div class="hist-item">
       <div class="hist-header">
-        <span class="hist-data">${entrada.data}</span>
-        <span class="hist-badge">${entrada.jogos.length} jogos · ${entrada.dezenas_por_jogo} dez.${entrada.metodologia ? ' · ' + entrada.metodologia : ''}</span>
+        <span class="hist-data">${esc(entrada.data)}</span>
+        <span class="hist-badge">${entrada.jogos.length} jogos · ${entrada.dezenas_por_jogo} dez.${entrada.metodologia ? ' · ' + esc(entrada.metodologia) : ''}</span>
+        ${seloPremiadosEntrada(entrada.jogos, res)}
       </div>
       <div class="hist-fixas">Fixas: ${entrada.fixas.map(fmt).join(' · ')}</div>
       <div class="hist-jogos-lista">
         ${res
-            ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res)).join('')
+            ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res, ei)).join('')
             : entrada.jogos.map((j, i) => `<div class="hist-jogo-row"><span class="hist-jogo-num">Jogo ${i + 1}</span><span style="font-family:var(--mono);font-size:11px">${j.map(fmt).join(' · ')}</span></div>`).join('')
         }
       </div>
@@ -1275,7 +1360,7 @@ function fecharModal() {
 }
 
 function confirmarDownload() {
-    const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+    const fixas = fixasGeradas;
     let conteudo = `LOTOMANIA - ${jogosGerados.length} jogos\n`;
     conteudo += `Fixas: ${fixas.map(fmt).join(' - ')}\n`;
     conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;

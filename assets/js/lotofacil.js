@@ -33,7 +33,6 @@ function getButton(id) {
 /** @typedef {{ top: number[] }} DicaAplicavel */
 /** @typedef {{ data: string; fixas: number[]; dezenas_por_jogo: number; jogos: number[][] }} HistoryEntry */
 
-const CAIXA_LOTOFACIL_API = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil';
 const CACHE_HISTORICO_KEY = 'loto_resultados_online_v2';
 const CORS_PROXY_BUILDERS = [
   /** @param {string} url */
@@ -73,6 +72,11 @@ const MOLDURA = new Set([1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 2
 const fixasSel = new Set();
 /** @type {number[][]} */
 let jogosGerados = [];
+/** Fixas e dezenas por jogo usadas na última geração (não as atuais da tela).
+ *  @type {number[]} */
+let fixasGeradas = [];
+let dezJogoGerado = 0;
+let jogosJaSalvos = false;
 /** @type {number[][]} */
 let livresSelecionados = [];
 /** @type {DicaAplicavel | null} */
@@ -138,26 +142,98 @@ function distancia(a, b) {
   return d;
 }
 
-/** @param {number[][]} todos
+/** Embaralhamento uniforme (Fisher-Yates). Retorna uma cópia.
+ *  @param {number[]} arr
+ *  @returns {number[]} */
+function embaralhar(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Escolhe até n combinações bem diferentes entre si (greedy max-min).
+ *  Mantém a menor distância de cada candidato já calculada, então custa
+ *  O(candidatos × n) em vez de O(candidatos × n²).
+ *  @param {number[][]} todos
  *  @param {number} n
  *  @returns {number[][]} */
 function selecionarDiversos(todos, n) {
   if (n >= todos.length) return todos.slice();
-  const pool = [...todos];
-  const inicio = pool.reduce((best, x) =>
-    distancia(x, pool[0]) > distancia(best, pool[0]) ? x : best, pool[1]);
-  const sel = [inicio];
-  pool.splice(pool.indexOf(inicio), 1);
-  while (sel.length < n && pool.length) {
-    const melhor = pool.reduce((best, x) => {
-      const d = Math.min(...sel.map(s => distancia(x, s)));
-      const db = Math.min(...sel.map(s => distancia(best, s)));
-      return d > db ? x : best;
-    }, pool[0]);
-    sel.push(melhor);
-    pool.splice(pool.indexOf(melhor), 1);
+  const minDist = new Array(todos.length).fill(Infinity);
+  const usado = new Array(todos.length).fill(false);
+  const sel = [];
+  let idx = Math.floor(Math.random() * todos.length);
+  while (sel.length < n && idx >= 0) {
+    usado[idx] = true;
+    sel.push(todos[idx]);
+    const escolhido = new Set(todos[idx]);
+    let melhor = -1;
+    let melhorDist = -1;
+    for (let i = 0; i < todos.length; i++) {
+      if (usado[i]) continue;
+      let iguais = 0;
+      for (const x of todos[i]) if (escolhido.has(x)) iguais++;
+      const d = (todos[i].length - iguais) * 2;
+      if (d < minDist[i]) minDist[i] = d;
+      if (minDist[i] > melhorDist) { melhorDist = minDist[i]; melhor = i; }
+    }
+    idx = melhor;
   }
   return sel;
+}
+
+/** Gera n combinações de k dezenas do pool, diversas entre si, sem
+ *  enumerar milhões de combinações (amostra aleatória quando o total é grande).
+ *  @param {number[]} pool
+ *  @param {number} k
+ *  @param {number} n
+ *  @returns {number[][]} */
+function gerarLivresDiversos(pool, k, n) {
+  const total = comb(pool.length, k);
+  if (total === 0) return [];
+  /** @type {number[][]} */
+  let candidatos;
+  if (total <= 3000) {
+    candidatos = combinations(pool, k);
+  } else {
+    const alvo = Math.min(total, Math.max(n * 40, 1500));
+    const vistos = new Set();
+    candidatos = [];
+    for (let t = 0; candidatos.length < alvo && t < alvo * 20; t++) {
+      const c = embaralhar(pool).slice(0, k).sort((a, b) => a - b);
+      const chave = c.join(',');
+      if (!vistos.has(chave)) { vistos.add(chave); candidatos.push(c); }
+    }
+  }
+  return selecionarDiversos(candidatos, Math.min(n, candidatos.length));
+}
+
+/** Formata números grandes de forma legível (pt-BR).
+ *  @param {number} n */
+function fmtComb(n) {
+  if (!n || !Number.isFinite(n)) return '-';
+  const um = (/** @type {number} */ v) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  if (n >= 1e18) return n.toExponential(1).replace('.', ',').replace('e+', ' × 10^');
+  if (n >= 1e15) return um(n / 1e15) + ' quatri';
+  if (n >= 1e12) return um(n / 1e12) + ' tri';
+  if (n >= 1e9) return um(n / 1e9) + ' bi';
+  if (n >= 1e6) return um(n / 1e6) + ' mi';
+  if (n >= 1e4) return um(n / 1e3) + ' mil';
+  return n.toLocaleString('pt-BR');
+}
+
+/** Escapa texto vindo de fontes externas antes de usar em innerHTML.
+ *  @param {unknown} s */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => /** @type {Record<string,string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+/** @param {number} ms */
+function sinalTimeout(ms) {
+  return (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ms) : undefined;
 }
 
 /**
@@ -179,7 +255,7 @@ function gerarJogosOtimizados(fixas, poolLivres, qtdJogos, ultimoResultado) {
     const somaTotal = somaFixas + somaLivres;
     if (somaTotal < 180 || somaTotal > 220) return false;
 
-    const paresLivres = livros[0] % 2 === 0 ? 1 : 0;
+    const paresLivres = livres[0] % 2 === 0 ? 1 : 0;
     const totalPares = paresFixas + paresLivres;
     if (totalPares < 7 || totalPares > 9) return false;
 
@@ -260,9 +336,10 @@ function atualizar() {
 
   getEl('sFixas').textContent = String(fixasSel.size);
   getEl('sLivres').textContent = String(livresPool.length);
-  getEl('sComb').textContent = nComb > 9999
-    ? (nComb / 1000).toFixed(1) + 'k' : String(nComb || '-');
+  getEl('sComb').textContent = fmtComb(nComb);
   atualizarOdds();
+
+  getButton('btnGerar').disabled = fixasSel.size > qtdFixas || livresPorJogo < 0 || nComb === 0;
 
   const aviso = getEl('aviso');
   if (fixasSel.size > qtdFixas) {
@@ -279,7 +356,18 @@ function atualizar() {
 }
 
 getSelect('selDezJogo').addEventListener('change', atualizar);
-getSelect('selJogos').addEventListener('change', atualizar);
+/** Quantidade de jogos digitada (1 a QTD_JOGOS_MAX). Vazio/inválido usa o padrão. */
+const QTD_JOGOS_MAX = 200;
+function getQtdJogos() {
+  const el = /** @type {HTMLInputElement} */ (document.getElementById('selJogos'));
+  const v = parseInt(el.value, 10);
+  return Number.isFinite(v) ? Math.max(1, Math.min(QTD_JOGOS_MAX, v)) : 15;
+}
+// Ao sair do campo, mostra o valor que realmente será usado.
+document.getElementById('selJogos').addEventListener('change', (e) => {
+  /** @type {HTMLInputElement} */ (e.target).value = String(getQtdJogos());
+});
+getInput('selJogos').addEventListener('input', atualizar);
 getInput('qtdFixas').addEventListener('input', atualizar);
 
 // login removed - app opens directly
@@ -287,7 +375,7 @@ getInput('qtdFixas').addEventListener('input', atualizar);
 getEl('btnGerar').addEventListener('click', () => {
   const fixas = Array.from(fixasSel).sort((a, b) => a - b);
   const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
-  const nJogos = parseInt(getSelect('selJogos').value, 10);
+  const nJogos = getQtdJogos();
   const qtdFixas = getQtdFixasDesejada();
   const livresPool = getLivres().sort((a, b) => a - b);
   const livrosPorJogo = dezJogo - fixas.length;
@@ -308,45 +396,25 @@ getEl('btnGerar').addEventListener('click', () => {
   }
 
   if (fixas.length === 14 && dezJogo === 15) {
-    jogosGerados = gerarJogosOtimizados(fixas, livresPool, nJogos, ultimoResultado || { dezenas: [] });
+    jogosGerados = gerarJogosOtimizados(fixas, livresPool, nJogos, { dezenas: ultimoResultado ? ultimoResultado.lista : [] });
   } else {
-    const todos = combinations(livresPool, livrosPorJogo);
-    const n = Math.min(nJogos, todos.length);
-    livresSelecionados = selecionarDiversos(todos, n);
+    livresSelecionados = gerarLivresDiversos(livresPool, livrosPorJogo, nJogos);
     jogosGerados = livresSelecionados.map(livres =>
       [...fixas, ...livres].sort((a, b) => a - b));
   }
+  fixasGeradas = fixas;
+  dezJogoGerado = dezJogo;
+  jogosJaSalvos = false;
 
   renderJogos(jogosGerados, fixas);
   getEl('lblJogos').textContent =
-    `${jogosGerados.length} jogos gerados - OK, sem repeticao`;
+    `${jogosGerados.length} jogos gerados - OK, sem repetição`;
   getEl('secJogos').style.display = 'block';
+  if (jogosGerados.length < nJogos) {
+    mostrarAviso(`Só existem ${jogosGerados.length} jogos diferentes com ${fixas.length} fixas em jogos de ${dezJogo} dezenas — foram gerados ${jogosGerados.length} em vez de ${nJogos}. Para mais jogos, remova fixas ou aumente as dezenas por jogo.`);
+  }
   mostrarModal();
 });
-
-/** @param {Set<number>} marcados
- *  @param {Set<number>} fixas
- *  @param {Set<number>=} acertos */
-function renderCartao(marcados, fixas, acertos) {
-  // marcados = Set de dezenas marcadas no jogo
-  // fixas = Set de fixas (cor diferente)
-  // acertos = Set de dezenas sorteadas (para conferência, opcional)
-  let html = '<div class="cartao-grid">';
-  for (let n = 1; n <= 25; n++) {
-    const marcado = marcados.has(n);
-    const fixa = fixas && fixas.has(n);
-    const acertou = acertos && acertos.has(n) && marcado;
-    const sorteada = acertos && acertos.has(n) && !marcado;
-    let cls = 'cartao-cel';
-    if (acertou) cls += ' cartao-acerto';
-    else if (fixa && marcado) cls += ' cartao-fixa';
-    else if (marcado) cls += ' cartao-marcado';
-    else if (sorteada) cls += ' cartao-sorteada-miss';
-    html += `<div class="${cls}">${fmt(n)}</div>`;
-  }
-  html += '</div>';
-  return html;
-}
 
 /** @param {number[][]} jogos
  *  @param {number[]} fixas */
@@ -374,17 +442,45 @@ function limparJogos() {
 }
 
 function copiarJogos() {
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+  const fixas = fixasGeradas;
   let txt = `LOTOFACIL - ${jogosGerados.length} jogos\n`;
   txt += `Fixas: ${fixas.map(fmt).join(' - ')}\n\n`;
   jogosGerados.forEach((j, i) => {
     txt += `Jogo ${i + 1}: ${j.map(fmt).join(' - ')}\n`;
   });
-  navigator.clipboard.writeText(txt).then(() => {
-    const btn = getButton('btnCopiar');
-    btn.textContent = 'Copiado!';
+  const btn = getButton('btnCopiar');
+  /** @param {string} msg */
+  const feedback = (msg) => {
+    btn.textContent = msg;
     setTimeout(() => btn.textContent = 'Copiar jogos', 2000);
+  };
+  copiarTexto(txt)
+    .then(() => feedback('Copiado!'))
+    .catch(() => feedback('Não foi possível copiar'));
+}
+
+/** Copia texto usando a Clipboard API e, se não houver/for bloqueada,
+ *  o método antigo com textarea + execCommand.
+ *  @param {string} txt
+ *  @returns {Promise<void>} */
+function copiarTexto(txt) {
+  const fallback = () => new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    document.body.removeChild(ta);
+    ok ? resolve(undefined) : reject(new Error('copy falhou'));
   });
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(txt).catch(fallback);
+  }
+  return fallback();
 }
 
 // Historico no localStorage
@@ -400,20 +496,24 @@ function setHistorico(h) {
 
 function salvarHistorico() {
   if (!jogosGerados.length) return;
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
-  const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
+  const btn = getEl('btnSalvar');
+  if (jogosJaSalvos) {
+    btn.textContent = 'Já está no histórico';
+    setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
+    return;
+  }
   const h = getHistorico();
   h.unshift({
     data: new Date().toLocaleString('pt-BR'),
-    fixas,
-    dezenas_por_jogo: dezJogo,
+    fixas: fixasGeradas,
+    dezenas_por_jogo: dezJogoGerado,
     jogos: jogosGerados
   });
   setHistorico(h);
+  jogosJaSalvos = true;
   renderHistorico();
-  const btn = getEl('btnSalvar');
   btn.textContent = 'Salvo!';
-  setTimeout(() => btn.textContent = 'Salvar no historico', 2000);
+  setTimeout(() => btn.textContent = 'Salvar no histórico', 2000);
 }
 
 function limparHistorico() {
@@ -436,24 +536,20 @@ function setStatusConcurso(msg, cor) {
   el.style.color = cor || 'var(--text2)';
 }
 
-/** @param {number|null} numero */
+/** Busca um concurso (ou o último, se numero = null). Um concurso específico
+ *  é procurado primeiro no cache local, sem precisar de internet.
+ *  Usa fetchJson, que já pula o acesso direto quando a CAIXA bloqueia CORS.
+ *  @param {number|null} numero
+ *  @returns {Promise<ResultadoConcurso | null>} */
 async function buscarConcurso(numero) {
-  const base = numero
-    ? `${CAIXA_LOTOFACIL_API}/${numero}`
-    : CAIXA_LOTOFACIL_API;
-  const urls = CORS_PROXY_BUILDERS.map(b => b(base));
-  for (const url of urls) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const data = await r.json();
-      const norm = normalizarConcursoApi(data);
-      if (norm.dezenas.length === 15) {
-        return { numero: norm.numero, data: norm.data, dezenas: new Set(norm.dezenas), lista: norm.dezenas };
-      }
-    } catch { /* tenta próximo */ }
+  try {
+    let c = numero ? lerCacheHistorico().find(x => x.numero === numero) : undefined;
+    if (!c) c = numero ? await buscarConcursoCaixa(numero) : await buscarUltimoCaixa();
+    if (!c || c.dezenas.length !== 15) return null;
+    return { numero: c.numero, data: c.data, dezenas: new Set(c.dezenas), lista: c.dezenas };
+  } catch {
+    return null;
   }
-  return null;
 }
 
 async function buscarUltimo() {
@@ -462,10 +558,10 @@ async function buscarUltimo() {
   if (res) {
     ultimoResultado = res;
     getInput('inputConcurso').value = String(res.numero);
-    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--verde)');
+    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--cor)');
     renderHistorico();
   } else {
-    setStatusConcurso('Não foi possível buscar o resultado. Tente novamente.', '#c0392b');
+    setStatusConcurso('Não foi possível buscar o resultado. Tente novamente ou digite o número do concurso.', '#c0392b');
   }
 }
 
@@ -480,25 +576,20 @@ async function buscarConcursoManual() {
   const res = await buscarConcurso(num);
   if (res) {
     ultimoResultado = res;
-    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--verde)');
+    setStatusConcurso(`Concurso ${res.numero}${res.data ? ' — ' + res.data : ''} carregado.`, 'var(--cor)');
     renderHistorico();
   } else {
     setStatusConcurso(`Concurso ${num} não encontrado.`, '#c0392b');
   }
 }
 
-async function buscarUltimoResultado() {
-  const res = await buscarConcurso(null);
-  if (res) { ultimoResultado = res; return true; }
-  return false;
-}
-
 /** @param {number[]} jogo
  *  @param {number} idx
  *  @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }} resultado */
-function renderJogoComAcertos(jogo, idx, resultado) {
+function renderJogoComAcertos(jogo, idx, resultado, entradaIdx = 0) {
   const acertos = jogo.filter(n => resultado.dezenas.has(n));
   const pts = acertos.length;
+  const linha = attrsJogoConferido(pts, entradaIdx, idx);
   let badgeClass = 'acerto-badge';
   if (pts >= 15) badgeClass += ' acerto-15';
   else if (pts >= 14) badgeClass += ' acerto-14';
@@ -511,16 +602,13 @@ function renderJogoComAcertos(jogo, idx, resultado) {
   }).join('');
 
   return `
-    <div class="hist-jogo-row">
+    <div class="hist-jogo-row${linha.classe}" id="${linha.id}">
       <span class="hist-jogo-num">Jogo ${idx + 1}</span>
       <div class="hist-dez-wrap">${dezenas}</div>
       <span class="${badgeClass}">${pts} pts</span>
     </div>`;
 }
 
-/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
-/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
-/** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
 /** @param {{ dezenas: Set<number>; numero: number; data: string; lista: number[] }=} resultado */
 function renderHistorico(resultado) {
   const h = /** @type {HistoryEntry[]} */ (getHistorico());
@@ -533,21 +621,23 @@ function renderHistorico(resultado) {
   const res = resultado || ultimoResultado;
   const resultadoHTML = res
     ? `<div class="hist-resultado">
-        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + res.data : ''}</span>
+        <span class="hist-resultado-label">Concurso ${res.numero}${res.data ? ' — ' + esc(res.data) : ''}</span>
         <div class="hist-resultado-dez">${res.lista.map(n => `<span class="dez-inline dez-sorteada">${fmt(n)}</span>`).join('')}</div>
        </div>`
     : '';
 
-  el.innerHTML = resultadoHTML + h.map((/** @type {HistoryEntry} */ entrada) => `
+  const idxs = indicesParaConferir(h);
+  el.innerHTML = renderSeletorConferencia(h, res) + resultadoHTML + (res ? renderResumoConferencia(h, res, idxs) : '') + h.map((/** @type {HistoryEntry} */ entrada, ei) => !idxs.includes(ei) ? '' : `
     <div class="hist-item">
       <div class="hist-header">
-        <span class="hist-data">${entrada.data}</span>
+        <span class="hist-data">${esc(entrada.data)}</span>
         <span class="hist-badge">${entrada.jogos.length} jogos · ${entrada.dezenas_por_jogo} dez.</span>
+        ${seloPremiadosEntrada(entrada.jogos, res)}
       </div>
       <div class="hist-fixas">Fixas: ${entrada.fixas.map(fmt).join(' · ')}</div>
       <div class="hist-jogos-lista">
         ${res
-          ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res)).join('')
+          ? entrada.jogos.map((j, i) => renderJogoComAcertos(j, i, res, ei)).join('')
           : entrada.jogos.map((j, i) => `<div class="hist-jogo-row"><span class="hist-jogo-num">Jogo ${i+1}</span><span style="font-family:var(--mono);font-size:11px">${j.map(fmt).join(' · ')}</span></div>`).join('')
         }
       </div>
@@ -569,16 +659,7 @@ async function carregarHistorico() {
   const h = getHistorico();
   if (!h.length) { renderHistorico(); return; }
 
-  if (!ultimoResultado) {
-    setStatusConcurso('Buscando último resultado...', 'var(--text2)');
-    const ok = await buscarUltimoResultado();
-    if (ok && ultimoResultado) {
-      getInput('inputConcurso').value = String(ultimoResultado.numero);
-      setStatusConcurso(`Concurso ${ultimoResultado.numero}${ultimoResultado.data ? ' — ' + ultimoResultado.data : ''} carregado.`, 'var(--verde)');
-    } else {
-      setStatusConcurso('Não foi possível buscar o resultado. Use o campo acima para buscar manualmente.', '#c0392b');
-    }
-  }
+  if (!ultimoResultado) await buscarUltimo();
   renderHistorico();
 }
 
@@ -625,8 +706,6 @@ function normalizarConcursoApi(valor, fallbackNumero = 0) {
   };
 }
 
-/** @param {any} data
- *  @returns {{ numero: number; data: string; dezenas: number[] }[]} */
 /** @param {any} data
  *  @returns {{ numero: number; data: string; dezenas: number[] }[]} */
 function normalizarConcursos(data) {
@@ -691,7 +770,11 @@ function analisarConcursos(concursos) {
   const recorte = concursos.slice(-Math.min(100, total));
   const freq = Array(26).fill(0);
   const freqRecente = Array(26).fill(0);
-  const ultimoIndice = Array(26).fill(0);
+  // Número do último concurso em que cada dezena saiu (usa o número real do
+  // concurso, não a posição na lista, para não errar quando faltar algum concurso).
+  const ultimoNumeroSaiu = Array(26).fill(0);
+  const numeroMaisRecente = total ? concursos[total - 1].numero : 0;
+  const numeroMaisAntigo = total ? concursos[0].numero : 0;
   /** @type {{ [key: string]: number }} */
   const distPares = {};
   /** @type {{ [key: string]: number }} */
@@ -711,7 +794,7 @@ function analisarConcursos(concursos) {
     const setAtual = new Set(concurso.dezenas);
     concurso.dezenas.forEach((n) => {
       freq[n]++;
-      ultimoIndice[n] = idx + 1;
+      ultimoNumeroSaiu[n] = concurso.numero;
     });
 
     const pares = concurso.dezenas.filter(n => n % 2 === 0).length;
@@ -728,7 +811,8 @@ function analisarConcursos(concursos) {
     addDist(distSeq, `${seq.paresLigados} ligacoes seguidas`);
     somas.push(soma);
 
-    if (idx > 0) {
+    // Só compara com o anterior se ele for mesmo o concurso imediatamente anterior.
+    if (idx > 0 && concursos[idx - 1].numero === concurso.numero - 1) {
       const anterior = new Set(concursos[idx - 1].dezenas);
       let repetidos = 0;
       setAtual.forEach(n => { if (anterior.has(n)) repetidos++; });
@@ -749,7 +833,7 @@ function analisarConcursos(concursos) {
       freqRecente: freqRecente[n],
       histPct,
       recPct,
-      atraso: total - ultimoIndice[n],
+      atraso: numeroMaisRecente - (ultimoNumeroSaiu[n] || numeroMaisAntigo - 1),
       score: (histPct * 0.55) + (recPct * 0.45)
     };
   });
@@ -759,7 +843,7 @@ function analisarConcursos(concursos) {
   const atrasadas = [...dezenas].sort((a, b) => b.atraso - a.atraso || a.n - b.n);
   const padroes = {
     pares: topDist(distPares, total),
-    repetidos: topDist(distRepetidos, Math.max(1, total - 1)),
+    repetidos: topDist(distRepetidos, Math.max(1, Object.values(distRepetidos).reduce((a, b) => a + b, 0))),
     baixas: topDist(distBaixas, total),
     moldura: topDist(distMoldura, total),
     soma: topDist(distSoma, total),
@@ -848,7 +932,7 @@ async function fetchJson(url) {
   for (const buildUrl of builders) {
     const finalUrl = buildUrl(url);
     try {
-      const resp = await fetch(finalUrl, { cache: 'no-store' });
+      const resp = await fetch(finalUrl, { cache: 'no-store', signal: sinalTimeout(10000) });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const texto = await resp.text();
       return JSON.parse(texto);
@@ -891,13 +975,17 @@ function mesclarConcursos(listas) {
 }
 
 async function buscarUltimoCaixa() {
-  const data = await fetchJson(CAIXA_LOTOFACIL_API);
-  const concursos = normalizarConcursos(data);
-  if (!concursos.length) throw new Error('ultimo concurso da CAIXA sem dezenas');
-  return concursos[0];
+  const c = normalizarConcursoApi(await ApiLoterias.ultimo('lotofacil'));
+  if (c.dezenas.length !== 15 || !c.numero) throw new Error('ultimo concurso sem dezenas');
+  return c;
 }
 
 async function buscarSeedHistorico() {
+  // Fonte rápida: todos os concursos em uma única requisição.
+  setStatusAnalise('Baixando todos os concursos de uma vez...');
+  const todos = normalizarConcursos(await ApiLoterias.todos('lotofacil'));
+  if (todos.length >= 100) return todos;
+
   for (const fonte of LOTOFACIL_SEEDS) {
     try {
       setStatusAnalise(`Carregando base historica auxiliar: ${fonte.nome}...`);
@@ -912,10 +1000,9 @@ async function buscarSeedHistorico() {
 }
 
 async function buscarConcursoCaixa(numero) {
-  const data = await fetchJson(`${CAIXA_LOTOFACIL_API}/${numero}`);
-  const concursos = normalizarConcursos(data);
-  if (!concursos.length) throw new Error(`concurso ${numero} sem dezenas`);
-  return concursos[0];
+  const c = normalizarConcursoApi(await ApiLoterias.concurso('lotofacil', numero), numero);
+  if (c.dezenas.length !== 15) throw new Error(`concurso ${numero} sem dezenas`);
+  return c;
 }
 
 function sleep(ms) {
@@ -929,10 +1016,18 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
   }
   if (!faltantes.length) return [];
 
-  const concorrencia = 4;
-  const pausaLote = 250;
+  const concorrencia = ApiLoterias.paralelo;
+  const pausaLote = 50;
+  const salvarACada = 10; // lotes — salva o progresso para não perder se a página fechar
   const falhas = [];
   let baixados = 0;
+  let lotes = 0;
+
+  const salvarProgresso = () =>
+    salvarCacheHistorico(Array.from(mapa.values()).sort((a, b) => a.numero - b.numero));
+
+  // Salva o que já temos (base auxiliar + cache) antes de começar a baixar.
+  salvarProgresso();
 
   for (let i = 0; i < faltantes.length; i += concorrencia) {
     const lote = faltantes.slice(i, i + concorrencia);
@@ -946,8 +1041,9 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
     }));
     resultados.filter(Boolean).forEach((concurso) => mapa.set(concurso.numero, concurso));
     baixados += lote.length;
+    if (++lotes % salvarACada === 0) salvarProgresso();
     if (baixados === faltantes.length || baixados % (concorrencia * 4) === 0) {
-      setStatusAnalise(`Baixando concursos da CAIXA: ${baixados}/${faltantes.length} faltantes...`);
+      setStatusAnalise(`Baixando concursos: ${baixados}/${faltantes.length} faltantes...`);
     }
     if (i + concorrencia < faltantes.length) await sleep(pausaLote);
   }
@@ -974,17 +1070,35 @@ async function completarHistoricoCaixa(mapa, numeroUltimo) {
 }
 
 async function carregarHistoricoOnline() {
-  setStatusAnalise('Consultando ultimo concurso oficial da CAIXA...');
-  const ultimo = await buscarUltimoCaixa();
-  const numeroUltimo = ultimo.numero;
+  setStatusAnalise('Consultando último concurso...');
   const cache = lerCacheHistorico();
+
+  /** @type {{ numero: number; data: string; dezenas: number[] }} */
+  let ultimo;
+  try {
+    ultimo = await buscarUltimoCaixa();
+  } catch (e) {
+    // CAIXA/proxies fora do ar: usa o que já está salvo no navegador.
+    if (cache.length >= 100) {
+      return {
+        concursos: cache,
+        fonte: { nome: 'cache local (CAIXA indisponivel, pode estar desatualizado)' },
+        faltantes: 0
+      };
+    }
+    throw e;
+  }
+
+  const numeroUltimo = ultimo.numero;
   const cacheCompleto = cache.length >= numeroUltimo && cache[cache.length - 1].numero >= numeroUltimo;
 
   if (cacheCompleto) {
     return { concursos: cache, fonte: { nome: 'cache local + CAIXA' }, faltantes: 0 };
   }
 
-  const seed = cache.length ? [] : await buscarSeedHistorico();
+  // Quando faltam muitos concursos (primeira visita, cache antigo ou download
+  // interrompido), baixa tudo de uma vez em vez de um por um.
+  const seed = numeroUltimo - cache.length > 20 ? await buscarSeedHistorico() : [];
   const mapa = mesclarConcursos([seed, cache, [ultimo]]);
   const falhas = await completarHistoricoCaixa(mapa, numeroUltimo);
   const concursos = Array.from(mapa.values()).sort((a, b) => a.numero - b.numero);
@@ -992,7 +1106,7 @@ async function carregarHistoricoOnline() {
 
   return {
     concursos,
-    fonte: { nome: 'API oficial da CAIXA' },
+    fonte: { nome: 'resultados oficiais da CAIXA' },
     faltantes: falhas.length
   };
 }
@@ -1020,12 +1134,18 @@ async function carregarAnalise() {
 function aplicarDicas() {
   if (!dicaAplicavel || !Array.isArray(dicaAplicavel.top)) return;
   const qtdFixas = getQtdFixasDesejada();
-  const fixas = dicaAplicavel.top.slice(0, qtdFixas).sort((a, b) => a - b);
+  const dezJogo = parseInt(getSelect('selDezJogo').value, 10);
+  // Deixa pelo menos 1 dezena livre por jogo, senão o botão Gerar fica travado.
+  const qtd = Math.min(qtdFixas, dezJogo - 1);
+  const fixas = dicaAplicavel.top.slice(0, qtd).sort((a, b) => a - b);
   fixasSel.clear();
   fixas.forEach(n => fixasSel.add(n));
   sincronizarGrades();
   atualizar();
-  mostrarAviso(`Dica aplicada: ${fixas.length} melhores dezenas marcadas como fixas.`);
+  const ajuste = qtd < qtdFixas
+    ? ` (limitado a ${qtd} para caber em jogos de ${dezJogo} dezenas)`
+    : '';
+  mostrarAviso(`Dica aplicada: ${fixas.length} melhores dezenas marcadas como fixas${ajuste}.`);
 }
 
 // Modal de download
@@ -1040,7 +1160,7 @@ function fecharModal() {
 }
 
 function confirmarDownload() {
-  const fixas = Array.from(fixasSel).sort((a, b) => a - b);
+  const fixas = fixasGeradas;
   let conteudo = `LOTOFACIL - ${jogosGerados.length} jogos\n`;
   conteudo += `Fixas: ${fixas.map(fmt).join(' - ')}\n`;
   conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
